@@ -10,10 +10,11 @@
 // ============================================================
 
 export const firebaseConfig = {
-  apiKey: "PEGA_AQUI",
-  authDomain: "PEGA_AQUI",
-  projectId: "PEGA_AQUI",
-  storageBucket: "PEGA_AQUI",
-  messagingSenderId: "PEGA_AQUI",
-  appId: "PEGA_AQUI"
+  apiKey: "AIzaSyDh_beUFLAyjABr5p08LPe_aWa7wQRgelE",
+  authDomain: "forja-612d5.firebaseapp.com",
+  databaseURL: "https://forja-612d5-default-rtdb.firebaseio.com",
+  projectId: "forja-612d5",
+  storageBucket: "forja-612d5.firebasestorage.app",
+  messagingSenderId: "1087052671327",
+  appId: "1:1087052671327:web:abaec98ccdfffca4006eea"
 };
