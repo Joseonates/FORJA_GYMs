@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D1730">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<title>Panel · FORJA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<script src="js/vendor/qrcode-generator.js"></script>
+<style>
+/* Layout: panel de operación; barra lateral en escritorio, pestañas deslizables arriba en móvil. Misma identidad que la app de miembros. */
+:root{
+  --bg:#EDF0F7; --surface:#FFFFFF; --surface-2:#F5F7FC; --ink:#0D1730; --muted:#5A6580; --line:#D6DCE9;
+  --accent:#2143F0; --accent-ink:#FFFFFF; --accent-soft:#E2E7FE; --hi:#FFD23F; --hi-ink:#231A00;
+  --good:#0E8A5B; --good-bg:#DDF4EA; --warn:#A86200; --warn-bg:#FFF0D6; --bad:#C23B22; --bad-bg:#FDE3DD; --info-bg:#E2E7FE;
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --shadow:0 1px 0 rgba(13,23,48,.04),0 8px 24px -12px rgba(13,23,48,.18);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#080E1D; --surface:#111A2F; --surface-2:#0D152A; --ink:#EEF2FF; --muted:#94A1C0; --line:#243050;
+  --accent:#6680FF; --accent-ink:#06102E; --accent-soft:#1B2650; --hi:#FFD23F; --hi-ink:#231A00;
+  --good:#3DD39A; --good-bg:#0F3326; --warn:#FFB547; --warn-bg:#3A2A0C; --bad:#FF7A61; --bad-bg:#3D1A14; --info-bg:#1B2650;
+  --shadow:0 1px 0 rgba(0,0,0,.2),0 10px 30px -14px rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#080E1D; --surface:#111A2F; --surface-2:#0D152A; --ink:#EEF2FF; --muted:#94A1C0; --line:#243050;
+  --accent:#6680FF; --accent-ink:#06102E; --accent-soft:#1B2650; --hi:#FFD23F; --hi-ink:#231A00;
+  --good:#3DD39A; --good-bg:#0F3326; --warn:#FFB547; --warn-bg:#3A2A0C; --bad:#FF7A61; --bad-bg:#3D1A14; --info-bg:#1B2650;
+  --shadow:0 1px 0 rgba(0,0,0,.2),0 10px 30px -14px rgba(0,0,0,.6); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+h1,h2,h3{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.01em;line-height:.95;margin:0;text-wrap:balance}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+
+.app{display:grid;min-height:100%;grid-template-columns:minmax(0,1fr)}
+.side,.main{min-width:0}
+@media(min-width:1000px){.app{grid-template-columns:240px minmax(0,1fr)}}
+.side{background:var(--ink);color:var(--bg);padding:18px 14px;display:flex;flex-direction:column;gap:18px}
+@media(min-width:1000px){.side{position:sticky;top:0;height:100vh;overflow:auto}}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:40px;height:40px;border-radius:10px;background:var(--accent);display:grid;place-items:center;color:#fff;font-family:var(--f-display);font-weight:900;font-size:24px;transform:skewX(-8deg);flex:none}
+.brand b{font-family:var(--f-display);font-weight:900;font-size:22px;line-height:1;display:block;letter-spacing:.02em}
+.brand small{display:block;font-size:12px;opacity:.7;line-height:1.2}
+.nav{display:flex;gap:4px}
+@media(max-width:999px){.side{position:sticky;top:0;z-index:20;padding:12px 16px 8px}.nav{overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px 4px}.nav::-webkit-scrollbar{display:none}.side .foot{display:none}}
+@media(min-width:1000px){.nav{flex-direction:column}}
+.nav button{display:flex;align-items:center;gap:10px;background:none;border:0;color:inherit;opacity:.72;padding:10px 12px;border-radius:10px;font-weight:600;white-space:nowrap;text-align:left}
+.nav button svg{width:18px;height:18px;flex:none}
+.nav button:hover{opacity:1;background:rgba(255,255,255,.06)}
+.nav button[aria-current="page"]{opacity:1;background:var(--accent);color:#fff}
+.navapp{display:flex;align-items:center;gap:10px;color:var(--hi);text-decoration:none;background:none;cursor:pointer;font:inherit;font-weight:700;padding:10px 12px;border-radius:10px;white-space:nowrap;border:1px dashed rgba(255,210,63,.5)}
+.navapp svg{width:18px;height:18px;flex:none}
+.navapp:hover{background:rgba(255,210,63,.1)}
+@media(min-width:1000px){.navapp{margin-top:10px}}
+.nav .count{margin-left:auto;background:var(--bad);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px}
+.side .foot{margin-top:auto;font-size:12px;opacity:.7;display:grid;gap:8px}
+.side .foot a{color:inherit}
+
+.main{min-width:0;padding-inline:16px;padding-block:16px 60px}
+@media(min-width:1000px){.main{padding-inline:28px;padding-block:24px 60px}}
+.wrap{max-width:1200px;margin:0 auto;display:grid;gap:16px}
+.pagehead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.pagehead h1{font-size:clamp(36px,6vw,54px);font-weight:900}
+.demo{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:var(--accent-soft);border:1px dashed var(--accent);border-radius:12px;padding:8px 14px;font-size:13px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow);min-width:0}
+.card-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:12px}
+.card-h h3{font-size:24px;font-weight:800}
+.grid{display:grid;gap:16px}
+.g2{display:grid;gap:16px}
+@media(min-width:900px){.g2{grid-template-columns:1fr 1fr}.g21{grid-template-columns:2fr 1fr}.g12{grid-template-columns:1fr 2fr}}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:760px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:2px;min-width:0}
+.kpi b{font-family:var(--f-display);font-weight:900;font-size:clamp(34px,5vw,46px);line-height:1}
+.kpi .d{font-size:12px;color:var(--muted)}
+.kpi.alert{background:var(--bad-bg);border-color:transparent}
+.kpi.alert b{color:var(--bad)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:11px;padding:11px 16px;font-weight:700;background:var(--accent);color:var(--accent-ink);font-size:14px;text-decoration:none;white-space:nowrap}
+.btn.ghost{background:var(--surface-2);color:var(--ink);border:1px solid var(--line)}
+.btn.hi{background:var(--hi);color:var(--hi-ink)}
+.btn.wa{background:#1FA855;color:#fff}
+.btn.sm{padding:7px 11px;font-size:13px;border-radius:9px}
+.btn:disabled{opacity:.5;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip .n{font-family:var(--f-mono);margin-left:4px;opacity:.75}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:var(--surface-2);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.activo{background:var(--good-bg);color:var(--good)}
+.pill.riesgo{background:var(--warn-bg);color:var(--warn)}
+.pill.inactivo,.pill.vencido{background:var(--bad-bg);color:var(--bad)}
+.pill.nuevo{background:var(--info-bg);color:var(--accent)}
+.inp{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.f{display:grid;gap:5px;font-weight:600;font-size:14px}
+.search{display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:0 12px;flex:1;min-width:200px}
+.search input{flex:1;min-width:0;border:0;background:transparent;padding:10px 0;outline:none}
+
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;font-size:13px;flex:none}
+.who{display:flex;align-items:center;gap:10px;min-width:0}
+.who b{display:block;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who small{color:var(--muted);font-size:12px}
+.list{display:grid}
+.li{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.li>.who{flex:1 1 190px}
+.li>.chips,.li>.btn,.li>.pill{flex:none}
+.li:first-child{border-top:0}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;min-width:820px}
+th{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface-2);font-weight:600}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+
+/* charts */
+.chart svg{width:100%;height:auto;display:block}
+.chart .gl{stroke:var(--line)} .chart text{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+.chart .bar{fill:var(--accent)} .chart .bar.today{fill:var(--ink)}
+.chart .hit{fill:transparent}
+.chart .hit:hover + .bar,.chart .bar:hover{opacity:.8}
+.heat{display:grid;grid-template-columns:34px repeat(18,1fr);gap:3px;font-family:var(--f-mono);font-size:10px;color:var(--muted);min-width:520px}
+.heat .c{aspect-ratio:1;border-radius:4px}
+.heat .hl{text-align:center}
+.legend-grad{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.legend-grad i{width:120px;height:10px;border-radius:4px;background:linear-gradient(90deg,var(--surface-2),var(--accent))}
+#tip{position:fixed;z-index:90;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;box-shadow:var(--shadow);white-space:nowrap}
+
+/* QR y recepción */
+.qrbox{background:#fff;border-radius:16px;padding:14px;display:inline-grid;place-items:center;border:1px solid var(--line)}
+.qrbox img,.qrbox canvas{display:block;max-width:100%;height:auto}
+.kiosk{position:fixed;inset:0;z-index:80;background:#0A1230;color:#fff;overflow:auto;padding:64px 16px 24px;display:grid;gap:20px;align-content:start}
+@media(min-width:900px){.kiosk{grid-template-columns:1.1fr 1fr;align-content:center;padding:70px 40px 40px}}
+.kclose{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:81;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-weight:700;font-size:14px;padding:9px 14px;border-radius:999px;cursor:pointer}
+.kclose:hover{background:rgba(255,255,255,.2)}
+.kiosk h1{font-size:clamp(44px,8vw,96px);font-weight:900;color:var(--hi)}
+.kiosk .clock{font-family:var(--f-mono);font-size:22px;opacity:.8}
+.kiosk .feed{display:grid;gap:8px}
+.kiosk .fi{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.07);border-radius:14px;padding:12px 14px;animation:pop .4s ease-out}
+.kiosk .fi b{font-size:18px}
+.kiosk .fi.new{background:var(--hi);color:var(--hi-ink)}
+@keyframes pop{from{transform:translateY(-10px);opacity:0}}
+
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(5,10,25,.55);z-index:70;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:760px){.scrim{align-items:center;padding:24px}}
+.sheet{background:var(--surface);color:var(--ink);width:100%;max-width:760px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px))}
+@media(min-width:760px){.sheet{border-radius:20px}}
+.sheet-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.sheet h2{font-size:36px;font-weight:900}
+.iconbtn{background:none;border:0;color:var(--muted);padding:6px;border-radius:8px;display:inline-grid;place-items:center}
+.mcal{max-width:340px}
+.mcal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.mcal-h b{font-family:var(--f-display);font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+.mcal-h .iconbtn{font-size:22px;line-height:1;width:34px;height:34px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
+.mcal-h .iconbtn:disabled{opacity:.3;cursor:default}
+.mcal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.mcal-g .wd{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-align:center;padding-bottom:2px}
+.mcal-g .cd{aspect-ratio:1;display:grid;place-items:center;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);font-family:var(--f-mono);font-size:13px;color:var(--ink);padding:0;cursor:pointer}
+.mcal-g button.cd:hover{border-color:var(--accent)}
+.mcal-g .cd.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.mcal-g .cd.today{outline:2px solid var(--hi);outline-offset:1px}
+.mcal-g .cd.fut{opacity:.35;cursor:default;background:transparent}
+.cal{display:grid;grid-template-columns:18px repeat(9,1fr);gap:4px;max-width:380px;align-items:center}
+.cal .cl{font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.cal i,.cal button{aspect-ratio:1;border-radius:4px;background:var(--surface-2);border:1px solid var(--line);padding:0;cursor:pointer}
+.cal button:hover{border-color:var(--accent)}
+.cal .on{background:var(--accent);border-color:var(--accent)}
+.cal .today{outline:2px solid var(--hi);outline-offset:1px}
+.cal i.fut{opacity:.25;cursor:default}
+.minis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mini{background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.mini b{display:block;font-family:var(--f-display);font-size:30px;line-height:1;font-weight:900}
+.bar{height:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.plans{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.plan{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--surface-2);display:grid;gap:4px}
+.plan>b{font-family:var(--f-display);font-size:30px;font-weight:900;line-height:1}
+.dayb{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;background:var(--surface-2)}
+.exrow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;font-size:14px}
+.addrow{display:grid;grid-template-columns:1fr 64px 80px auto;gap:6px}
+@media(max-width:520px){.addrow{grid-template-columns:1fr 1fr}.addrow select{grid-column:1/-1}}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.sw{width:40px;height:40px;border-radius:12px;border:3px solid transparent}
+.sw[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface) inset}
+.phone{width:100%;max-width:300px;margin:0 auto;border:10px solid var(--ink);border-radius:36px;background:#EDF0F7;overflow:hidden;color:#0D1730}
+.phone .ph-top{display:flex;align-items:center;gap:8px;padding:12px}
+.phone .ph-hero{margin:0 10px 10px;border-radius:16px;padding:16px;color:#fff}
+.phone .ph-hero h4{font-family:var(--f-display);font-size:30px;line-height:.95;margin:4px 0;text-transform:uppercase}
+.phone .ph-card{margin:0 10px 10px;background:#fff;border-radius:12px;padding:12px;font-size:13px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:95;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;box-shadow:var(--shadow)}
+.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.plan.pick{text-align:left;cursor:pointer;font:inherit;color:inherit}
+.plan.pick:hover{border-color:var(--accent)}
+.plan.pick[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.plan.newp{border-style:dashed;align-content:center;justify-items:start}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg2 button{border:1px solid var(--line);background:var(--surface-2);border-radius:12px;padding:10px;text-align:left}
+.seg2 button small{display:block;color:var(--muted);font-size:12px}
+.seg2 button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+@media(max-width:999px){.side .foot{display:none!important}}
+.li .num{white-space:nowrap}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo" id="bLogo">F</div><div><b id="bName">FORJA</b><small id="bSede">Panel del gimnasio</small></div></div>
+    <nav class="nav" id="nav" aria-label="Secciones del panel"></nav>
+    <div class="foot">
+      <span id="whoami"></span>
+    </div>
+  </aside>
+  <main class="main"><div class="wrap" id="view"></div></main>
+</div>
+<div id="modalRoot"></div>
+<div id="tip" hidden></div>
+
+<script>
+/* ===================== CATÁLOGOS ===================== */
+const DEF_PLANS=[
+ {id:'diario',n:'Pase diario',tipo:'tiempo',days:1,price:10000,on:true},
+ {id:'semanal',n:'Semanal',tipo:'tiempo',days:7,price:40000,on:true},
+ {id:'tiquetera10',n:'Tiquetera 10 entradas',tipo:'entradas',entries:10,days:60,price:85000,on:true},
+ {id:'mensual',n:'Mensual',tipo:'tiempo',days:30,price:120000,on:true},
+ {id:'estudiante',n:'Estudiante',tipo:'tiempo',days:30,price:90000,on:true},
+ {id:'trimestral',n:'Trimestral',tipo:'tiempo',days:90,price:320000,on:true},
+ {id:'anual',n:'Anual',tipo:'tiempo',days:365,price:1150000,on:true}];
+const DEF_METHODS=[{id:'efectivo',n:'Efectivo',on:true},{id:'nequi',n:'Nequi',on:true},{id:'daviplata',n:'Daviplata',on:true},{id:'transferencia',n:'Transferencia',on:true},{id:'tarjeta',n:'Tarjeta',on:true}];
+let PLANS={};
+let TRAINERS=[];
+const TEAM_COLORS=['#E4572E','#17A398','#8E44AD','#D98E04','#2E86DE','#27AE60'];
+const PROGS=[['primeros','Primeros pasos',1,3,4],['casa','En casa sin equipo',1,3,4],['quema','Quema inicial',1,3,6],['torso-pierna','Torso / Pierna',2,4,8],['ppl3','Empuje · Jalón · Pierna',2,3,8],['gluteos','Glúteos y piernas',2,3,6],['ppl6','PPL 6 días',3,6,8],['fuerza','Fuerza 5×5',3,3,12],['calistenia','Calistenia avanzada',3,4,8]];
+const LV=['','Principiante','Intermedio','Avanzado'];
+const EXN=[['sentadilla','Sentadilla con barra'],['goblet','Sentadilla goblet'],['prensa','Prensa de piernas'],['zancadas','Zancadas con mancuernas'],['bulgara','Sentadilla búlgara'],['extension','Extensión de cuádriceps'],['rumano','Peso muerto rumano'],['curl-femoral','Curl femoral en máquina'],['peso-muerto','Peso muerto'],['hip-thrust','Hip thrust con barra'],['puente','Puente de glúteo'],['swing','Swing con kettlebell'],['patada-polea','Patada de glúteo en polea'],['talones-pie','Elevación de talones'],['banca','Press de banca con barra'],['inclinado','Press inclinado con mancuernas'],['press-maquina','Press de pecho en máquina'],['aperturas','Aperturas en polea'],['flexiones','Flexiones'],['fondos','Fondos en paralelas'],['militar','Press militar con barra'],['arnold','Press Arnold'],['laterales','Elevaciones laterales'],['face-pull','Face pull en polea'],['dominadas','Dominadas'],['jalon','Jalón al pecho'],['remo-barra','Remo con barra'],['remo-mancuerna','Remo a una mano'],['remo-sentado','Remo sentado en polea'],['curl-barra','Curl con barra'],['martillo','Curl martillo'],['triceps-polea','Extensión de tríceps en polea'],['frances','Press francés'],['plancha','Plancha'],['crunch','Crunch abdominal'],['elev-piernas','Elevación de piernas colgado'],['giro-ruso','Giro ruso'],['lenador','Leñador en polea']];
+const EXI=Object.fromEntries(EXN);
+const COLORS=[['#2143F0','Cobalto'],['#E4572E','Fuego'],['#0E9F6E','Esmeralda'],['#7C3AED','Violeta'],['#0F172A','Grafito'],['#D97706','Ámbar']];
+
+/* ===================== FECHAS Y UTILIDADES ===================== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dkey=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
+const dayAt=n=>{const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-n);return d};
+const TODAY=dkey(dayAt(0));
+const daysBetween=(a,b)=>Math.round((new Date(b+'T12:00')-new Date(a+'T12:00'))/864e5);
+const ago=k=>daysBetween(k,TODAY);
+const money=n=>'$'+Math.round(n).toLocaleString('es-CO');
+const fdate=k=>new Date(k+'T12:00').toLocaleDateString('es-CO',{day:'numeric',month:'short'}).replace(' de ',' ').replace('.','');
+const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const hueOf=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return `hsl(${h} 55% 45%)`};
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.append(t);setTimeout(()=>t.remove(),2300)}
+function copy(text,msg){const ok=()=>toast(msg||'Copiado. Pégalo en WhatsApp');try{navigator.clipboard.writeText(text).then(ok,fb)}catch(e){fb()}
+  function fb(){const ta=document.createElement('textarea');ta.value=text;document.body.append(ta);ta.select();try{document.execCommand('copy');ok()}catch(e){toast('Selecciona el texto y cópialo')}ta.remove()}}
+
+/* ===================== DATOS (Firestore) ===================== */
+let D={ready:false,v:2,plans:[],methods:[],brand:{name:'',sede:'',color:'#2143F0',welcome:''},code:'',owner:'',members:[],pays:[],customProgs:[],retos:[],team:[]};
+let SYNC=null, QR_K='', VIS={};
+const SK={m:{},v:{},p:{},c:{},r:{},gym:''};
+const clean=o=>JSON.parse(JSON.stringify(o));
+const memberCore=m=>{const {visits,...r}=m;return JSON.stringify(r)};
+const gymCore=()=>JSON.stringify({name:D.brand.name,sede:D.brand.sede||'',color:D.brand.color,welcome:D.brand.welcome||'',plans:D.plans,methods:D.methods});
+const ROLE_SEC={dueno:['resumen','miembros','asistencia','membresias','programas','entrenadores','marca'],recepcion:['resumen','miembros','asistencia','membresias','programas'],entrenador:['miembros','asistencia','programas']};
+const allowedSec=k=>!!SYNC&&ROLE_SEC[SYNC.rol].includes(k);
+const isOwnerRole=()=>!!SYNC&&SYNC.rol==='dueno';
+const isFrontRole=()=>!!SYNC&&(SYNC.rol==='dueno'||SYNC.rol==='recepcion');
+const ROLE_NAME={dueno:'Dueño',recepcion:'Recepción',entrenador:'Entrenador'};
+const appUrl=()=>location.origin+location.pathname.replace(/[^/]*$/,'');
+function syncPlans(){ PLANS=Object.fromEntries(D.plans.map(p=>[p.id,[p.n,p.price,p.days,p]])) }
+function fail(e){ console.error(e); toast(e&&e.code==='permission-denied'?'No tienes permiso para esta acción':'No se pudo guardar. Revisa tu conexión e intenta de nuevo'); }
+/* Guarda en Firestore solo lo que cambió desde la última sincronización */
+function save(){
+  syncPlans(); if(!SYNC) return;
+  const {F,gid}=SYNC, {doc,setDoc,updateDoc,deleteDoc,serverTimestamp}=F.fs, g=(...p)=>doc(F.db,'gimnasios',gid,...p);
+  const gc=gymCore(); if(gc!==SK.gym){ SK.gym=gc; if(isOwnerRole()) updateDoc(doc(F.db,'gimnasios',gid),JSON.parse(gc)).catch(fail); }
+  const live=new Set();
+  D.members.forEach(m=>{
+    const c=memberCore(m);
+    if(SK.m[m.id]!==c){ const isNew=SK.m[m.id]===undefined; SK.m[m.id]=c; const {visits,id,uid,created,...data}=m;
+      if(isNew) setDoc(g('miembros',m.id),{...clean(data),uid:null,created:serverTimestamp()}).catch(fail);
+      else updateDoc(g('miembros',m.id),clean(data)).catch(fail); }
+    (m.visits||[]).forEach(v=>{ if(!v.id) v.id=m.id+'_'+v.d; live.add(v.id);
+      if(!SK.v[v.id]){ SK.v[v.id]=1; (VIS[m.id]=VIS[m.id]||[]).push(v);
+        setDoc(g('asistencias',v.id),{...clean({m:m.id,d:v.d,h:v.h,t:v.t??null,via:v.via||'manual',by:SYNC.uid}),ts:serverTimestamp()}).catch(fail); } });
+  });
+  Object.keys(SK.v).forEach(k=>{ if(!live.has(k)){ delete SK.v[k]; const mid=k.slice(0,k.lastIndexOf('_')); if(VIS[mid]) VIS[mid]=VIS[mid].filter(v=>v.id!==k); deleteDoc(g('asistencias',k)).catch(fail); } });
+  D.pays.forEach(p=>{ if(!p.id){ p.id=F.newId('gimnasios',gid,'pagos'); SK.p[p.id]=1; const {id,...data}=p; setDoc(g('pagos',p.id),{...clean({...data,by:SYNC.uid}),ts:serverTimestamp()}).catch(fail); } });
+  D.customProgs.forEach(p=>{ const c=JSON.stringify(p); if(SK.c[p.id]!==c){ SK.c[p.id]=c; const {id,...data}=p; setDoc(g('programas',p.id),clean(data)).catch(fail); } });
+  D.retos.forEach(r=>{ const c=JSON.stringify(r); if(SK.r[r.id]!==c){ SK.r[r.id]=c; const {id,...data}=r; setDoc(g('retos',r.id),clean(data)).catch(fail); } });
+}
+/* Mezcla documentos en objetos existentes para no romper referencias abiertas */
+function mergeById(arr,docs){ const by=new Map(arr.map(x=>[x.id,x])); return docs.map(d=>{ const data={id:d.id,...d.data()}; const cur=by.get(d.id); if(!cur) return data; Object.keys(cur).forEach(k=>{ if(!(k in data)&&k!=='visits') delete cur[k]; }); return Object.assign(cur,data); }); }
+function attachVisits(){ D.members.forEach(m=>{ m.visits=(VIS[m.id]||[]).slice().sort((a,b)=>a.d.localeCompare(b.d)); }); }
+let rTimer=null, pendingRender=false;
+function scheduleRender(){ clearTimeout(rTimer); rTimer=setTimeout(()=>{ if(!D.ready) return; const a=document.activeElement;
+  if(a&&a.closest&&a.closest('#view')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&a.id!=='mq'){ pendingRender=true; return; }
+  render(); if(window.kioskRedraw) window.kioskRedraw(); },60); }
+document.addEventListener('focusout',()=>{ if(pendingRender){ pendingRender=false; setTimeout(scheduleRender,80); } });
+function ensureQR(){ if(!SYNC) return; const {F,gid}=SYNC; QR_K=F.makeCode(10); F.fs.setDoc(F.fs.doc(F.db,'gimnasios',gid,'privado','qr'),{d:TODAY,k:QR_K,by:SYNC.uid}).catch(fail); }
+async function boot(){
+  const F=await import('./js/fb.js');
+  let ses; try{ ses=await F.session(['dueno','recepcion','entrenador']); }catch(e){ return; }
+  const {profile,gym,user}=ses, gid=gym.id;
+  SYNC={F,gid,uid:user.uid,rol:profile.rol,name:profile.n||'',email:profile.email||''};
+  if(!allowedSec(sec)) sec=ROLE_SEC[SYNC.rol][0];
+  $('#whoami').textContent=(SYNC.name||SYNC.email)+' · '+ROLE_NAME[SYNC.rol];
+  const {doc,collection,query,where,onSnapshot}=F.fs, col=(...p)=>collection(F.db,'gimnasios',gid,...p);
+  const need=['gym','miembros','asistencias','programas','retos','equipo'].concat(isFrontRole()?['pagos']:[]), got=new Set();
+  const ready=k=>{ got.add(k); if(!D.ready&&need.every(x=>got.has(x))) D.ready=true; scheduleRender(); };
+  const bad=e=>{ fail(e); };
+  onSnapshot(doc(F.db,'gimnasios',gid),sn=>{ const x=sn.data()||{}; D.brand={name:x.name||'Mi gimnasio',sede:x.sede||'',color:x.color||'#2143F0',welcome:x.welcome||''}; D.plans=x.plans||[]; D.methods=x.methods||[]; D.code=x.code||''; D.owner=x.owner||''; syncPlans(); SK.gym=gymCore(); buildTrainers(); ready('gym'); },bad);
+  onSnapshot(col('miembros'),qs=>{ D.members=mergeById(D.members,qs.docs); attachVisits(); SK.m={}; D.members.forEach(m=>SK.m[m.id]=memberCore(m)); ready('miembros'); },bad);
+  onSnapshot(query(col('asistencias'),where('d','>=',dkey(dayAt(120)))),qs=>{ VIS={}; SK.v={}; qs.docs.forEach(d=>{ const v={id:d.id,...d.data()}; (VIS[v.m]=VIS[v.m]||[]).push(v); SK.v[d.id]=1; }); attachVisits(); ready('asistencias'); },bad);
+  if(isFrontRole()) onSnapshot(query(col('pagos'),where('d','>=',dkey(dayAt(400)))),qs=>{ D.pays=qs.docs.map(d=>({id:d.id,...d.data()})); D.pays.forEach(p=>SK.p[p.id]=1); ready('pagos'); },bad);
+  onSnapshot(col('programas'),qs=>{ D.customProgs=qs.docs.map(d=>({id:d.id,...d.data()})); SK.c={}; D.customProgs.forEach(p=>SK.c[p.id]=JSON.stringify(p)); ready('programas'); },bad);
+  onSnapshot(col('retos'),qs=>{ D.retos=qs.docs.map(d=>({id:d.id,...d.data()})); SK.r={}; D.retos.forEach(r=>SK.r[r.id]=JSON.stringify(r)); ready('retos'); },bad);
+  onSnapshot(col('equipo'),qs=>{ D.team=qs.docs.map(d=>({id:d.id,...d.data()})); buildTrainers(); ready('equipo'); },bad);
+  onSnapshot(doc(F.db,'gimnasios',gid,'privado','qr'),sn=>{ const x=sn.data(); if(x&&x.d===TODAY) QR_K=x.k; else ensureQR(); const q=document.getElementById('qr'); if(q) drawQR(q,220); if(window.kioskRedraw) window.kioskRedraw(); },bad);
+}
+function buildTrainers(){ TRAINERS=[{id:'dueno',n:'Dueño del gimnasio',sp:'Dueño',c:'#2143F0'},...D.team.filter(t=>t.rol==='entrenador').map((t,i)=>({id:t.id,n:t.n,sp:'Entrenador',c:t.color||TEAM_COLORS[i%TEAM_COLORS.length]}))]; }
+
+/* ===================== MÉTRICAS ===================== */
+const planOf=m=>D.plans.find(p=>p.id===m.plan)||{id:m.plan,n:'Plan eliminado',tipo:'tiempo',days:30,price:0,on:false};
+const isDaily=m=>{const p=planOf(m);return p.tipo==='tiempo'&&p.days===1};
+const isTicket=m=>planOf(m).tipo==='entradas';
+const addDays=(k,n)=>dkey(new Date(new Date(k+'T12:00').getTime()+n*864e5));
+function planLabel(p){ if(p.tipo==='entradas') return p.entries+' entradas · vigencia '+p.days+' días'; return ({1:'por día',7:'por semana',15:'por quincena',30:'por mes',90:'por 3 meses',180:'por 6 meses',365:'por año'})[p.days]||('por '+p.days+' días') }
+function venceTxt(m){ if(isDaily(m)) return 'Paga por día'; if(isTicket(m)) return (m.entries||0)+' entradas · '+fdate(m.exp); return fdate(m.exp) }
+const lastPay=m=>D.pays.filter(p=>p.m===m.id).sort((a,b)=>b.d.localeCompare(a.d))[0];
+const methodName=id=>(D.methods.find(x=>x.id===id)||{n:'Sin registrar'}).n;
+const lastVisit=m=>m.visits.length?m.visits[m.visits.length-1].d:null;
+const daysSince=m=>{const l=lastVisit(m);return l?ago(l):999};
+const expIn=m=>daysBetween(TODAY,m.exp);
+const visitsIn=(m,n)=>m.visits.filter(v=>ago(v.d)<n).length;
+function status(m){ if(!isDaily(m)&&(expIn(m)<0||(isTicket(m)&&(m.entries||0)<=0))) return 'vencido'; if(ago(m.joined)<=14) return 'nuevo'; const s=daysSince(m); return s<=7?'activo':s<=20?'riesgo':'inactivo' }
+const ST={activo:'Activo',riesgo:'En riesgo',inactivo:'Inactivo',vencido:'Vencido',nuevo:'Nuevo'};
+function streak(m){ const set=new Set(m.visits.map(v=>v.d)); let n=0,i=set.has(TODAY)?0:1; while(set.has(dkey(dayAt(i)))){n++;i++} return n }
+function checkinsOn(k){ const out=[]; D.members.forEach(m=>m.visits.forEach(v=>{ if(v.d===k) out.push({m,h:v.h,t:v.t}) })); return out.sort((a,b)=>(b.t||b.h*60)-(a.t||a.h*60)) }
+const trainer=id=>TRAINERS.find(t=>t.id===id)||{id:'',n:'Sin asignar',sp:'',c:'#8A94AD'};
+function progName(id){ if(!id) return 'Sin programa'; const p=PROGS.find(x=>x[0]===id); if(p) return p[1]; const c=D.customProgs.find(x=>x.id===id); return c?c.n:'Sin programa' }
+const firstName=m=>m.n.split(' ')[0];
+
+/* ===================== NAVEGACIÓN ===================== */
+const ICO={
+ resumen:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+ miembros:'<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 1 0 0-6M22 21c0-3-2-5-5-5"/>',
+ asistencia:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7M14 20h3"/>',
+ membresias:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
+ programas:'<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>',
+ entrenadores:'<circle cx="12" cy="7" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2M12 11v4"/>',
+ marca:'<circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.5"/><circle cx="12" cy="7.5" r="1.5"/><circle cx="16" cy="10" r="1.5"/><path d="M12 21a3 3 0 0 1 0-6h2"/>'};
+const SECTIONS=[['resumen','Resumen'],['miembros','Miembros'],['asistencia','Asistencia'],['membresias','Membresías'],['programas','Programas y retos'],['entrenadores','Equipo'],['marca','Mi marca']];
+let sec='resumen';
+function nav(){ const risk=D.members.filter(m=>status(m)==='riesgo').length;
+  $('#nav').innerHTML=SECTIONS.filter(([k])=>allowedSec(k)).map(([k,l])=>`<button data-sec="${k}" aria-current="${sec===k?'page':'false'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICO[k]}</svg>${l}${k==='miembros'&&risk?`<span class="count">${risk}</span>`:''}</button>`).join('')+`<button class="navapp" data-logout type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Cerrar sesión</button>`;
+  const b=D.brand; $('#bName').textContent=b.name.toUpperCase(); $('#bSede').textContent=b.sede; $('#bLogo').textContent=(b.name[0]||'F').toUpperCase(); $('#bLogo').style.background=b.color; }
+$('#nav').onclick=e=>{ if(e.target.closest('[data-logout]')){ SYNC&&SYNC.F.logout(); return } const b=e.target.closest('[data-sec]'); if(b){sec=b.dataset.sec; render(); window.scrollTo({top:0})}};
+function render(){ if(!D.ready){ $('#view').innerHTML='<div class="empty" style="margin-top:40px">Cargando tu gimnasio…</div>'; return } if(!allowedSec(sec)) sec=ROLE_SEC[SYNC.rol][0]; nav(); ({resumen:vResumen,miembros:vMiembros,asistencia:vAsistencia,membresias:vMembresias,programas:vProgramas,entrenadores:vEntrenadores,marca:vMarca})[sec]() }
+const demoBar=()=>'';
+const head=(t,sub,right='')=>`<div class="pagehead"><div><div class="eyebrow">${esc(D.brand.name)} · ${sub}</div><h1>${t}</h1></div><div class="chips">${right}</div></div>`;
+
+/* tooltip */
+const tip=$('#tip');
+document.addEventListener('pointermove',e=>{const t=e.target.closest('[data-tip]'); if(!t){tip.hidden=true;return} tip.textContent=t.dataset.tip; tip.hidden=false; const w=tip.offsetWidth; tip.style.left=Math.min(innerWidth-w-8,Math.max(8,e.clientX-w/2))+'px'; tip.style.top=(e.clientY-40)+'px'});
+document.addEventListener('pointerdown',e=>{const t=e.target.closest('[data-tip]'); if(!t) tip.hidden=true});
+
+/* modal */
+function modal(html,onMount){ const r=$('#modalRoot'); r.innerHTML=`<div class="scrim" role="dialog" aria-modal="true"><div class="sheet">${html}</div></div>`; const sc=r.firstChild;
+  sc.addEventListener('click',e=>{ if(e.target===sc||e.target.closest('[data-close]')) closeModal() }); onMount&&onMount(sc) }
+function closeModal(){ $('#modalRoot').innerHTML='' }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('.kiosk')) closeKiosk(); else closeModal() } });
+const X='<button class="iconbtn" data-close aria-label="Cerrar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+
+/* mensajes */
+const MSG={
+ riesgo:m=>`Hola ${firstName(m)} 👋 Te extrañamos en ${D.brand.name}. Llevas ${daysSince(m)} días sin venir. ¿Te esperamos esta semana? ${m.prog?'Tu programa '+progName(m.prog)+' sigue donde lo dejaste':'Tenemos un programa listo para ti'} 💪`,
+ vence:m=>`Hola ${firstName(m)}, tu plan ${planOf(m).n} en ${D.brand.name} ${expIn(m)<0?'venció el':'vence el'} ${fdate(m.exp)}. Renueva y no pierdas tu racha 🔥 Te esperamos.`,
+ bienvenida:m=>`¡Hola ${firstName(m)}! Te damos la bienvenida a ${D.brand.name} 🎉 Crea tu cuenta en FORJA: ${appUrl()} → Crear cuenta → código del gimnasio *${D.code}*, con el correo ${m.email||'que diste en recepción'}. Ahí verás tu plan, tus programas y registrarás tu entrada con el QR 💪`};
+
+/* ===================== RESUMEN ===================== */
+function vResumen(){
+  const M=D.members, act=M.filter(m=>['activo','nuevo'].includes(status(m))), risk=M.filter(m=>status(m)==='riesgo').sort((a,b)=>daysSince(a)-daysSince(b));
+  const today=checkinsOn(TODAY), yest=checkinsOn(dkey(dayAt(1)));
+  const month=TODAY.slice(0,7), income=D.pays.filter(p=>p.d.slice(0,7)===month).reduce((a,p)=>a+p.amount,0);
+  const valid=M.filter(m=>expIn(m)>=0), ret=valid.length?Math.round(valid.filter(m=>visitsIn(m,14)>0).length/valid.length*100):0;
+  const soon=M.filter(m=>{const e=expIn(m);return !isDaily(m)&&e>=0&&e<=7}).sort((a,b)=>expIn(a)-expIn(b));
+  // barras 14 días
+  const days=[...Array(14)].map((_,i)=>{const d=dayAt(13-i),k=dkey(d);return{d,k,v:checkinsOn(k).length}});
+  const max=Math.max(10,...days.map(x=>x.v)), step=max>40?20:10, top=Math.ceil(max/step)*step;
+  const W=640,H=220,pl=34,pb=26,bw=(W-pl)/14;
+  let g=''; for(let t=0;t<=top;t+=step){const y=H-pb-(H-pb-12)*t/top; g+=`<line class="gl" x1="${pl}" x2="${W}" y1="${y}" y2="${y}"/><text x="${pl-6}" y="${y+4}" text-anchor="end">${t}</text>`}
+  const bars=days.map((x,i)=>{const h=(H-pb-12)*x.v/top, x0=pl+i*bw+5, w=bw-10, y=H-pb-h, lbl=x.d.toLocaleDateString('es-CO',{weekday:'short',day:'numeric'});
+    return `<path class="bar ${x.k===TODAY?'today':''}" d="M${x0} ${H-pb} V${y+4} Q${x0} ${y} ${x0+4} ${y} H${x0+w-4} Q${x0+w} ${y} ${x0+w} ${y+4} V${H-pb} Z"/><rect class="hit" x="${pl+i*bw}" y="0" width="${bw}" height="${H-pb}" data-tip="${lbl}: ${x.v} visitas"/><text x="${x0+w/2}" y="${H-8}" text-anchor="middle">${x.d.getDate()}</text>`}).join('');
+  // horas pico (últimos 28 días)
+  const hm={}; let hmax=1; M.forEach(m=>m.visits.forEach(v=>{ if(ago(v.d)<28){ const wd=(new Date(v.d+'T12:00').getDay()+6)%7, k=wd+'-'+v.h; hm[k]=(hm[k]||0)+1; hmax=Math.max(hmax,hm[k]) } }));
+  const WD=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'], HRS=[...Array(18)].map((_,i)=>i+5);
+  let heat='<span></span>'+HRS.map(h=>`<span class="hl">${h%3===2?h:''}</span>`).join('');
+  WD.forEach((w,wi)=>{ heat+=`<span>${w}</span>`+HRS.map(h=>{const v=hm[wi+'-'+h]||0, p=Math.round(v/hmax*100); return `<i class="c" style="background:color-mix(in srgb,var(--accent) ${p}%,var(--surface-2))" data-tip="${w} ${h}:00 · ${v} visitas en 4 semanas"></i>`}).join('') });
+  let peak=['',0]; Object.entries(hm).forEach(([k,v])=>{if(v>peak[1])peak=[k,v]}); const [pw,ph]=peak[0]?peak[0].split('-'):[null,null];
+  const top5=M.map(m=>({m,v:visitsIn(m,7)})).sort((a,b)=>b.v-a.v).slice(0,5);
+  $('#view').innerHTML=`${M.length?'':onboarding()}${head('Resumen',new Date().toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'}),`<button class="btn hi" data-kiosk>Pantalla de recepción</button>`)}
+  <div class="kpis">
+    <div class="kpi"><span class="eyebrow">Miembros activos</span><b class="num">${act.length}</b><span class="d">de ${M.length} registrados</span></div>
+    <div class="kpi"><span class="eyebrow">Visitas hoy</span><b class="num">${today.length}</b><span class="d">ayer: ${yest.length}</span></div>
+    ${isOwnerRole()?`<div class="kpi"><span class="eyebrow">Ingresos del mes</span><b class="num" style="font-size:clamp(26px,3.6vw,36px)">${money(income)}</b><span class="d">${D.pays.filter(p=>p.d.slice(0,7)===month).length} pagos registrados</span></div>`:`<div class="kpi"><span class="eyebrow">Vencen esta semana</span><b class="num">${soon.length}</b><span class="d">planes por renovar</span></div>`}
+    <div class="kpi alert"><span class="eyebrow">En riesgo de abandonar</span><b class="num">${risk.length}</b><span class="d">entre 8 y 20 días sin venir</span></div>
+  </div>
+  <div class="g2 g21">
+    <div class="card chart"><div class="card-h"><h3>Visitas por día</h3><span class="muted" style="font-size:13px">últimos 14 días · hoy en oscuro</span></div>
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Visitas por día en los últimos 14 días">${g}${bars}</svg></div>
+    <div class="card"><div class="card-h"><h3>Retención</h3></div>
+      <b style="font-family:var(--f-display);font-size:64px;line-height:1;font-weight:900">${ret}%</b>
+      <p class="muted" style="margin:.3em 0 12px;font-size:14px">de los miembros con plan vigente vinieron al menos una vez en los últimos 14 días.</p>
+      <div class="bar"><i style="width:${ret}%"></i></div>
+      <p style="font-size:13px;margin:12px 0 0">Hora pico: <b>${pw!==null?WD[pw]+' '+ph+':00':'aún sin datos'}</b></p></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-h"><h3>Recupera a estos miembros</h3><button class="btn sm ghost" data-go="miembros" data-f="riesgo">Ver los ${risk.length}</button></div>
+      <p class="muted" style="margin:-4px 0 8px;font-size:13px">Un mensaje a tiempo evita que cancelen. Toca "Mensaje" y pégalo en WhatsApp.</p>
+      <div class="list">${risk.slice(0,6).map(m=>`<div class="li"><div class="who" data-m="${m.id}" style="cursor:pointer"><span class="av" style="background:${hueOf(m.n)}">${ini(m.n)}</span><span style="min-width:0"><b>${esc(m.n)}</b><small>${daysSince(m)} días sin venir · ${esc(progName(m.prog))}</small></span></div><button class="btn sm wa" data-msg="riesgo" data-id="${m.id}">Mensaje</button></div>`).join('')||'<div class="empty">Nadie en riesgo. ¡Excelente!</div>'}</div></div>
+    <div class="card"><div class="card-h"><h3>Vencen esta semana</h3><button class="btn sm ghost" data-go="membresias">Membresías</button></div>
+      <div class="list">${soon.slice(0,6).map(m=>`<div class="li"><div class="who" data-m="${m.id}" style="cursor:pointer"><span class="av" style="background:${hueOf(m.n)}">${ini(m.n)}</span><span style="min-width:0"><b>${esc(m.n)}</b><small>${planOf(m).n} · ${expIn(m)===0?'vence hoy':'vence en '+expIn(m)+(expIn(m)===1?' día':' días')}</small></span></div><button class="btn sm wa" data-msg="vence" data-id="${m.id}">Recordar</button></div>`).join('')||'<div class="empty">Ningún plan vence esta semana.</div>'}</div></div>
+  </div>
+  <div class="g2 g21">
+    <div class="card"><div class="card-h"><h3>Horas pico</h3><span class="legend-grad">Menos <i></i> Más</span></div>
+      <div style="overflow-x:auto"><div class="heat">${heat}</div></div></div>
+    <div class="card"><div class="card-h"><h3>Más constantes</h3><span class="muted" style="font-size:13px">últimos 7 días</span></div>
+      <div class="list">${top5.map((x,i)=>`<div class="li"><div class="who"><span class="num" style="flex:none;width:18px;color:var(--muted)">${i+1}</span><span class="av" style="background:${hueOf(x.m.n)}">${ini(x.m.n)}</span><b>${esc(x.m.n)}</b></div><span class="num">${x.v} visitas</span></div>`).join('')}</div></div>
+  </div>`;
+  bindCommon();
+}
+function onboarding(){ return `<div class="card" style="border:2px solid var(--accent)"><div class="card-h"><h3>Primeros pasos en FORJA</h3></div>
+  <ol style="margin:0;padding-left:20px;display:grid;gap:6px">
+    <li>Revisa tus <b>planes y precios</b> en Membresías.</li>
+    <li>Registra a tus <b>miembros</b> con su correo, para que puedan usar la app.</li>
+    <li>Invita a tu <b>equipo</b> (recepción y entrenadores) en Equipo.</li>
+    <li>Comparte el código del gimnasio <b class="num">${esc(D.code)}</b> y la dirección <b>${esc(appUrl())}</b>.</li>
+    <li>Pon la <b>pantalla de recepción</b> con el QR en la entrada.</li>
+  </ol></div>`; }
+function bindCommon(extra){
+  const v=$('#view');
+  v.onclick=e=>{ if(extra&&extra(e)) return; const t=e.target.closest('[data-msg],[data-m],[data-go],[data-kiosk]'); if(!t) return;
+    if(t.dataset.msg){ const m=D.members.find(x=>x.id===t.dataset.id); copy(MSG[t.dataset.msg](m),'Mensaje copiado. Pégalo en WhatsApp de '+firstName(m)); return }
+    if(t.dataset.m){ openMember(t.dataset.m); return }
+    if(t.dataset.go){ sec=t.dataset.go; if(t.dataset.f) mf=t.dataset.f; render(); window.scrollTo({top:0}); return }
+    if('kiosk' in t.dataset) openKiosk();
+  };
+}
+
+/* ===================== MIEMBROS ===================== */
+let mf='todos', mq='';
+function vMiembros(){
+  const counts={todos:D.members.length}; D.members.forEach(m=>{const s=status(m);counts[s]=(counts[s]||0)+1});
+  const list=D.members.filter(m=>(mf==='todos'||status(m)===mf)&&(!mq||m.n.toLowerCase().includes(mq.toLowerCase()))).sort((a,b)=>({riesgo:0,vencido:1,nuevo:2,activo:3,inactivo:4}[status(a)]-{riesgo:0,vencido:1,nuevo:2,activo:3,inactivo:4}[status(b)])||daysSince(a)-daysSince(b));
+  $('#view').innerHTML=`${head('Miembros',D.members.length+' registrados',isFrontRole()?`<button class="btn" data-add>+ Nuevo miembro</button>`:'')}
+  <div class="chips">${['todos','activo','riesgo','inactivo','vencido','nuevo'].map(k=>`<button class="chip" data-f="${k}" aria-pressed="${mf===k}">${k==='todos'?'Todos':ST[k]}<span class="n">${counts[k]||0}</span></button>`).join('')}</div>
+  <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mq" placeholder="Buscar por nombre" value="${esc(mq)}" aria-label="Buscar miembro"></label>
+  <div class="tablewrap"><table><thead><tr><th>Miembro</th><th>Estado</th><th>Última visita</th><th>Visitas 30 días</th><th>Racha</th><th>Programa</th><th>Entrenador</th><th>Vence</th></tr></thead>
+  <tbody>${list.map(m=>{const s=status(m),e=expIn(m);return `<tr data-m="${m.id}"><td><div class="who"><span class="av" style="background:${hueOf(m.n)}">${ini(m.n)}</span><span><b>${esc(m.n)}</b><small>${esc(planOf(m).n)}${m.uid?' · 📱 usa la app':''}</small></span></div></td>
+   <td><span class="pill ${s}">${ST[s]}</span></td><td class="num">${lastVisit(m)?(daysSince(m)===0?'Hoy':daysSince(m)===1?'Ayer':'Hace '+daysSince(m)+' d'):'—'}</td><td class="num">${visitsIn(m,30)}</td><td class="num">${streak(m)?'🔥 '+streak(m):'—'}</td>
+   <td>${m.prog?esc(progName(m.prog)):'<span class="muted">Sin asignar</span>'}</td><td>${trainer(m.trainer).n}</td><td class="num" style="color:${s==='vencido'?'var(--bad)':e<=7&&!isDaily(m)?'var(--warn)':'inherit'}">${venceTxt(m)}</td></tr>`}).join('')}</tbody></table>
+  ${list.length?'':`<div class="empty" style="margin:12px">${D.members.length?'No hay miembros con ese filtro.':'Aún no hay miembros. Toca “+ Nuevo miembro” para registrar el primero.'}</div>`}</div>`;
+  const v=$('#view');
+  v.onclick=e=>{const t=e.target.closest('[data-f],[data-m],[data-add]'); if(!t) return;
+    if(t.dataset.f){mf=t.dataset.f; vMiembros()} else if(t.dataset.m) openMember(t.dataset.m); else addMember() };
+  const q=$('#mq'); q.oninput=()=>{mq=q.value; const p=q.selectionStart; vMiembros(); const n=$('#mq'); n.focus(); n.setSelectionRange(p,p)};
+}
+let calOff=0, calFor=null;
+function monthCal(m,off){
+  const now=dayAt(0), first=new Date(now.getFullYear(),now.getMonth()-off,1,12), y=first.getFullYear(), mo=first.getMonth();
+  const dim=new Date(y,mo+1,0).getDate(), lead=(first.getDay()+6)%7, set=new Set(m.visits.map(v=>v.d));
+  const title=first.toLocaleDateString('es-CO',{month:'long',year:'numeric'});
+  let cells=''; for(let i=0;i<lead;i++) cells+='<span></span>';
+  let cnt=0;
+  for(let d=1;d<=dim;d++){ const k=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const fut=k>TODAY, on=set.has(k); if(on) cnt++;
+    cells+= fut?`<span class="cd fut">${d}</span>`:`<button type="button" class="cd ${on?'on':''} ${k===TODAY?'today':''}" data-day="${k}" aria-label="${d} de ${first.toLocaleDateString('es-CO',{month:'long'})}: ${on?'vino, toca para quitar':'no vino, toca para marcar'}">${d}</button>` }
+  const minOff=Math.min(12,Math.max(0,Math.ceil(ago(m.joined)/30)+1));
+  return `<div class="mcal"><div class="mcal-h"><button type="button" class="iconbtn" data-cm="1" ${off>=minOff?'disabled':''} aria-label="Mes anterior">‹</button><b>${title}</b><button type="button" class="iconbtn" data-cm="-1" ${off<=0?'disabled':''} aria-label="Mes siguiente">›</button></div>
+   <div class="mcal-g"><span class="wd">L</span><span class="wd">M</span><span class="wd">M</span><span class="wd">J</span><span class="wd">V</span><span class="wd">S</span><span class="wd">D</span>${cells}</div>
+   <div class="muted" style="font-size:12px;margin-top:6px"><b class="num" style="color:var(--ink)">${cnt}</b> ${cnt===1?'visita':'visitas'} en ${first.toLocaleDateString('es-CO',{month:'long'})}</div></div>`;
+}
+function openMember(id){
+  if(calFor!==id){calFor=id;calOff=0}
+  const m=D.members.find(x=>x.id===id), s=status(m), e=expIn(m);
+  const allProgs=[...PROGS.map(p=>[p[0],p[1]+' · '+LV[p[2]]]),...D.customProgs.map(p=>[p.id,p.n+' · del gimnasio'])];
+  modal(`<div class="sheet-h"><div class="who"><span class="av" style="width:52px;height:52px;font-size:18px;background:${hueOf(m.n)}">${ini(m.n)}</span><div><h2>${esc(m.n)}</h2><div class="chips" style="margin-top:6px"><span class="pill ${s}">${ST[s]}</span><span class="tag">Miembro desde ${fdate(m.joined)}</span></div></div></div>${X}</div>
+   <div class="minis" style="margin-bottom:14px"><div class="mini"><span class="eyebrow">Visitas 30 d</span><b class="num">${visitsIn(m,30)}</b></div><div class="mini"><span class="eyebrow">Racha</span><b class="num">${streak(m)}</b></div><div class="mini"><span class="eyebrow">Última</span><b class="num" style="font-size:22px;padding-top:6px">${lastVisit(m)?fdate(lastVisit(m)):'—'}</b></div></div>
+   <div class="g2" style="margin-bottom:14px">
+     <div><div class="eyebrow" style="margin-bottom:6px">Asistencia</div><div id="calBox">${monthCal(m,calOff)}</div>
+       <div class="chips" style="margin-top:10px">${m.visits.some(v=>v.d===TODAY)?'<span class="tag" style="background:var(--good-bg);color:var(--good);border-color:transparent">✓ Ya registró su entrada hoy</span>':needsPay(m)?'<button class="btn sm hi" id="mIn">Cobrar y registrar entrada de hoy</button>':'<button class="btn sm" id="mIn">Registrar entrada de hoy</button>'}</div>
+       <p class="muted" style="font-size:12px;margin:6px 0 0">Toca un día para marcar o quitar una asistencia olvidada. Los días en azul son los que vino.</p></div>
+     <div class="grid" style="gap:10px">
+       <div class="plan" style="background:var(--surface-2)"><span class="eyebrow">Membresía</span><b style="font-size:24px">${esc(planOf(m).n)} · ${money(planOf(m).price)}</b>
+         <span style="font-size:13px;color:${s==='vencido'?'var(--bad)':e<=7&&!isDaily(m)?'var(--warn)':'var(--muted)'}">${isDaily(m)?'Paga por día · último pago '+(lastPay(m)?fdate(lastPay(m).d):'—'):isTicket(m)?(m.entries||0)+' entradas disponibles · vigentes hasta el '+fdate(m.exp):e<0?'Venció hace '+(-e)+' días':e===0?'Vence hoy':'Vence el '+fdate(m.exp)+' ('+e+' días)'}</span>
+         ${isFrontRole()?`<button class="btn sm" id="renew" style="margin-top:6px">${isDaily(m)?'Cobrar día':'Registrar pago'}</button>`:''}</div>
+     </div>
+   </div>
+   <div class="g2" style="margin-bottom:14px">
+     <label class="f">Programa asignado<select class="inp" id="mProg"><option value="">Sin programa</option>${allProgs.map(([k,n])=>`<option value="${k}" ${m.prog===k?'selected':''}>${esc(n)}</option>`).join('')}</select></label>
+     <label class="f">Entrenador<select class="inp" id="mTr">${TRAINERS.map(t=>`<option value="${t.id}" ${m.trainer===t.id?'selected':''}>${t.n}</option>`).join('')}</select></label>
+   </div>
+   <label class="f" style="margin-bottom:14px">Notas del entrenador<textarea class="inp" id="mNotes" rows="2" placeholder="Lesiones, objetivos, preferencias…">${esc(m.notes)}</textarea></label>
+   <div class="plan" style="margin-bottom:14px;gap:8px"><span class="eyebrow">App de miembros</span>
+     ${m.uid?'<span style="font-weight:600;color:var(--good)">✓ Ya creó su cuenta y usa la app</span>':'<span class="muted" style="font-size:13px">Aún no crea su cuenta. Envíale la bienvenida con el código del gimnasio.</span>'}
+     <label class="f">Correo para la app<input class="inp" id="mEmail" type="email" value="${esc(m.email||'')}" ${m.uid||!isFrontRole()?'disabled':''} placeholder="correo@ejemplo.com"></label></div>
+   <div class="eyebrow" style="margin-bottom:8px">Enviar por WhatsApp</div>
+   <div class="chips"><button class="btn sm wa" data-t="riesgo">Te extrañamos</button><button class="btn sm wa" data-t="vence">Recordar pago</button><button class="btn sm wa" data-t="bienvenida">Bienvenida</button></div>`,
+  sc=>{ const upd=()=>{ m.prog=sc.querySelector('#mProg').value||null; m.trainer=sc.querySelector('#mTr').value; m.notes=sc.querySelector('#mNotes').value; save(); };
+    sc.querySelector('#mProg').onchange=()=>{upd();toast('Programa asignado. '+firstName(m)+' lo verá en su app');render()};
+    sc.querySelector('#mTr').onchange=()=>{upd();toast('Entrenador actualizado');render()};
+    sc.querySelector('#mNotes').onchange=upd;
+    sc.querySelector('#mEmail').onchange=e=>{ const v=e.target.value.trim().toLowerCase(); if(v&&D.members.some(x=>x!==m&&x.email===v)){ toast('Otro miembro ya tiene ese correo'); e.target.value=m.email||''; return } m.email=v; save(); toast('Correo guardado'); };
+    sc.querySelector('#mIn')?.addEventListener('click',()=>{ if(needsPay(m)&&isFrontRole()) openCharge(id,{checkin:true,after:()=>openMember(id)}); else { checkIn(m); toast('Entrada de '+firstName(m)+' registrada'+(isTicket(m)?(m.entries===1?' · le queda 1 entrada':' · le quedan '+m.entries+' entradas'):'')); render(); openMember(id) } });
+    sc.querySelector('#calBox').addEventListener('click',e=>{ const nb=e.target.closest('[data-cm]'); if(nb){ calOff=Math.max(0,calOff+ +nb.dataset.cm); sc.querySelector('#calBox').innerHTML=monthCal(m,calOff); return }
+      const b=e.target.closest('[data-day]'); if(!b) return; const k=b.dataset.day; const i=m.visits.findIndex(v=>v.d===k);
+      if(i>=0){ m.visits.splice(i,1); if(isTicket(m)) m.entries=(m.entries||0)+1; toast('Asistencia del '+fdate(k)+' quitada') }
+      else { const now=new Date(); m.visits.push({d:k,h:k===TODAY?now.getHours():18,t:k===TODAY?now.getHours()*60+now.getMinutes():undefined}); m.visits.sort((a,b)=>a.d.localeCompare(b.d)); if(isTicket(m)&&m.entries>0) m.entries--; toast('Asistencia del '+fdate(k)+' registrada') }
+      save(); render(); openMember(id) });
+    sc.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>copy(MSG[b.dataset.t](m),'Mensaje copiado para '+firstName(m)));
+    sc.querySelector('#renew')?.addEventListener('click',()=>openCharge(id,{checkin:isDaily(m)&&!m.visits.some(v=>v.d===TODAY),after:()=>openMember(id)}));
+  });
+}
+function applyCharge(m,planId,amount,method){
+  const p=D.plans.find(x=>x.id===planId);
+  if(p.tipo==='entradas'){ m.entries=(m.plan===planId&&expIn(m)>=0?(m.entries||0):0)+p.entries; m.exp=addDays(TODAY,p.days-1) }
+  else { const keep=m.plan===planId&&expIn(m)>=0&&p.days>1; m.exp=keep?addDays(m.exp,p.days):addDays(TODAY,p.days-1) }
+  m.plan=planId; D.pays.push({m:m.id,amount,d:TODAY,plan:planId,method}); save();
+}
+function openCharge(id,opts){
+  if(!isFrontRole()){ toast('Solo recepción o el dueño pueden cobrar'); return }
+  opts=opts||{}; const m=D.members.find(x=>x.id===id);
+  const act=D.plans.filter(p=>p.on); let sel=opts.plan||(act.some(p=>p.id===m.plan)?m.plan:act[0].id);
+  const meths=D.methods.filter(x=>x.on);
+  modal(`<div class="sheet-h"><div><div class="eyebrow">Registrar pago</div><h2>Cobrar a ${esc(firstName(m))}</h2></div>${X}</div>
+   <form id="cf" class="grid" style="gap:14px">
+    <div class="f"><span>Plan</span><div class="plans" id="cPlans">${act.map(p=>`<button type="button" class="plan pick" data-p="${p.id}" aria-pressed="${p.id===sel}"><span class="eyebrow">${esc(p.n)}</span><b class="num" style="font-size:24px">${money(p.price)}</b><span class="muted" style="font-size:12px">${planLabel(p)}</span></button>`).join('')}</div></div>
+    <div class="g2"><label class="f">Valor a cobrar<input class="inp num" id="cAmt" inputmode="numeric" value="${PLANS[sel][1]}"></label>
+    <div class="f"><span>Medio de pago</span><div class="chips" id="cMet">${meths.map((x,i)=>`<button type="button" class="chip" data-mt="${x.id}" aria-pressed="${i===0}">${esc(x.n)}</button>`).join('')}</div></div></div>
+    ${opts.checkin?`<label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="cIn" checked> Registrar la entrada de hoy</label>`:''}
+    <div class="chips"><button class="btn" type="submit" id="cGo">Cobrar ${money(PLANS[sel][1])}</button><button class="btn ghost" type="button" data-close>Cancelar</button></div>
+   </form>`,
+  sc=>{ let met=meths[0]?.id||'efectivo'; const amt=sc.querySelector('#cAmt'), go=sc.querySelector('#cGo');
+    const upd=()=>go.textContent='Cobrar '+money(parseInt(String(amt.value).replace(/\D/g,''))||0);
+    sc.querySelector('#cPlans').onclick=e=>{const b=e.target.closest('[data-p]'); if(!b) return; sel=b.dataset.p; sc.querySelectorAll('[data-p]').forEach(x=>x.setAttribute('aria-pressed',x===b)); amt.value=PLANS[sel][1]; upd()};
+    sc.querySelector('#cMet').onclick=e=>{const b=e.target.closest('[data-mt]'); if(!b) return; met=b.dataset.mt; sc.querySelectorAll('[data-mt]').forEach(x=>x.setAttribute('aria-pressed',x===b))};
+    amt.oninput=upd;
+    sc.querySelector('#cf').onsubmit=ev=>{ev.preventDefault(); const a=parseInt(String(amt.value).replace(/\D/g,''))||0;
+      applyCharge(m,sel,a,met); const ci=sc.querySelector('#cIn'); if(ci&&ci.checked) checkIn(m);
+      closeModal(); toast(`Pago de ${money(a)} en ${methodName(met).toLowerCase()} registrado${ci&&ci.checked?' y entrada registrada':''}`); render(); opts.after&&opts.after() };
+  });
+}
+function addMember(){
+  modal(`<div class="sheet-h"><h2>Nuevo miembro</h2>${X}</div>
+   <form id="fm" class="grid" style="gap:12px">
+    <label class="f">Nombre completo<input class="inp" id="nN" required maxlength="40" placeholder="Ej. Laura Restrepo"></label>
+    <label class="f">Correo (para que use la app)<input class="inp" id="nE" type="email" maxlength="80" placeholder="correo@ejemplo.com"></label>
+    <div class="g2"><label class="f">Plan<select class="inp" id="nP">${D.plans.filter(p=>p.on).map(p=>`<option value="${p.id}" ${p.id==='mensual'?'selected':''}>${esc(p.n)} · ${money(p.price)}</option>`).join('')}</select></label>
+    <label class="f">Entrenador<select class="inp" id="nT">${TRAINERS.map(t=>`<option value="${t.id}">${t.n}</option>`).join('')}</select></label></div>
+    <label class="f">Programa inicial<select class="inp" id="nG"><option value="">Que haga el test en la app</option>${PROGS.filter(p=>p[2]===1).map(p=>`<option value="${p[0]}">${p[1]}</option>`).join('')}</select></label>
+    <div class="chips"><button class="btn" type="submit">Registrar y cobrar</button><button class="btn ghost" type="button" data-close>Cancelar</button></div></form>`,
+  sc=>sc.querySelector('#fm').onsubmit=ev=>{ev.preventDefault(); const n=sc.querySelector('#nN').value.trim(); if(!n) return; const plan=sc.querySelector('#nP').value; const email=sc.querySelector('#nE').value.trim().toLowerCase(); if(email&&D.members.some(x=>x.email===email)){ toast('Ya hay un miembro con ese correo'); return }
+    const m={id:SYNC.F.newId('gimnasios',SYNC.gid,'miembros'),n,email,plan,joined:TODAY,exp:dkey(dayAt(1)),visits:[],prog:sc.querySelector('#nG').value||null,trainer:sc.querySelector('#nT').value,notes:'',entries:0};
+    D.members.unshift(m); save(); closeModal(); mf='todos'; openCharge(m.id,{plan,checkin:true,after:()=>{toast(firstName(m)+' registrado. Envíale la bienvenida');openMember(m.id)}}) });
+}
+
+/* ===================== ASISTENCIA ===================== */
+function qrText(){ return 'FORJA|'+(SYNC?SYNC.gid:'')+'|'+QR_K }
+function drawQR(el,size){
+  if(!el) return;
+  try{
+    if(typeof window.qrcode!=='function') throw new Error('sin librería');
+    if(qrcode.stringToBytesFuncs&&qrcode.stringToBytesFuncs['UTF-8']) qrcode.stringToBytes=qrcode.stringToBytesFuncs['UTF-8'];
+    const q=qrcode(0,'M'); q.addData(qrText()); q.make(); const n=q.getModuleCount(); let d='';
+    for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) d+=`M${c} ${r}h1v1h-1z`;
+    el.innerHTML=`<svg viewBox="-2 -2 ${n+4} ${n+4}" width="${size}" height="${size}" shape-rendering="crispEdges" role="img" aria-label="Código QR de entrada"><rect x="-2" y="-2" width="${n+4}" height="${n+4}" fill="#ffffff"/><path d="${d}" fill="#0D1730"/></svg>`;
+  }catch(e){
+    el.innerHTML=`<div style="width:${size}px;max-width:100%;padding:16px;color:#0D1730;text-align:center;font-size:14px">No se pudo dibujar el código QR en este momento.<br>Registra la entrada por nombre en Asistencia.</div>`;
+  }
+}
+function checkIn(m){ const now=new Date(); if(m.visits.some(v=>v.d===TODAY)) return false; m.visits.push({d:TODAY,h:now.getHours(),t:now.getHours()*60+now.getMinutes()}); if(isTicket(m)&&m.entries>0) m.entries--; save(); return true }
+const needsPay=m=>status(m)==='vencido'||(isDaily(m)&&m.exp!==TODAY);
+const hhmm=c=>c.t!=null?String(Math.floor(c.t/60)).padStart(2,'0')+':'+String(c.t%60).padStart(2,'0'):String(c.h).padStart(2,'0')+':00';
+function vAsistencia(){
+  const today=checkinsOn(TODAY);
+  $('#view').innerHTML=`${head('Asistencia','hoy · '+fdate(TODAY),`<button class="btn hi" data-kiosk>Pantalla de recepción</button>`)}
+  <div class="g2 g12">
+    <div class="card" style="text-align:center;display:grid;gap:12px;justify-items:center">
+      <div class="eyebrow">QR de entrada · se renueva cada día</div>
+      <div class="qrbox" id="qr"></div>
+      <p class="muted" style="margin:0;font-size:14px;max-width:32ch">Ponlo en la pantalla de la entrada. El miembro lo escanea desde su app FORJA y su visita queda registrada. Cambia cada día, así que no sirve una foto vieja.</p>
+    </div>
+    <div class="card"><div class="card-h"><h3>Registrar entrada o cobrar</h3></div>
+      <label class="search" style="margin-bottom:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="ciq" placeholder="Escribe el nombre del miembro" aria-label="Buscar miembro para registrar entrada"></label>
+      <div class="list" id="ciRes"></div>
+      <div class="card-h" style="margin:16px 0 6px"><h3>Entradas de hoy</h3><span class="num muted">${today.length}</span></div>
+      <div class="list" style="max-height:420px;overflow:auto">${today.map(c=>`<div class="li"><div class="who" data-m="${c.m.id}" style="cursor:pointer"><span class="num muted" style="flex:none;width:44px">${hhmm(c)}</span><span class="av" style="background:${hueOf(c.m.n)}">${ini(c.m.n)}</span><span style="min-width:0"><b>${esc(c.m.n)}</b><small>${esc(progName(c.m.prog))}</small></span></div><span class="pill ${status(c.m)}">${ST[status(c.m)]}</span></div>`).join('')||'<div class="empty">Aún no hay entradas hoy.</div>'}</div>
+    </div>
+  </div>`;
+  drawQR($('#qr'),220);
+  bindCommon();
+  setTimeout(()=>$('#ciq')&&$('#ciq').oninput(),0);
+  const q=$('#ciq'), res=$('#ciRes');
+  q.oninput=()=>{ const s=q.value.trim().toLowerCase(); if(s.length<2){res.innerHTML=`<div class="li"><span class="muted" style="font-size:13px">Busca un miembro, o cobra a un visitante.</span><button class="btn sm ghost" data-walk>+ Visitante: cobrar pase diario</button></div>`;return}
+    const found=D.members.filter(m=>m.n.toLowerCase().includes(s)).slice(0,5);
+    res.innerHTML=found.map(m=>{const inT=m.visits.some(v=>v.d===TODAY), np=needsPay(m);return `<div class="li"><div class="who"><span class="av" style="background:${hueOf(m.n)}">${ini(m.n)}</span><span style="min-width:0"><b>${esc(m.n)}</b><small>${np?`<span style="color:var(--bad)">${isDaily(m)?'Pase diario sin pagar hoy':'Plan vencido o sin entradas'}</span>`:esc(planOf(m).n)+(isTicket(m)?' · quedan '+m.entries:'')}</small></span></div>${inT?'<button class="btn sm" disabled>Ya entró</button>':np?`<button class="btn sm hi" data-pay="${m.id}">Cobrar y registrar</button>`:`<button class="btn sm" data-ci="${m.id}">Registrar</button>`}</div>`}).join('')
+      +`<div class="li"><span class="muted" style="font-size:13px">¿Es alguien nuevo que paga por el día?</span><button class="btn sm ghost" data-walk>+ Visitante: cobrar pase diario</button></div>`; };
+  res.onclick=e=>{const b=e.target.closest('[data-ci],[data-pay],[data-walk]'); if(!b) return;
+    if(b.dataset.pay){ const m=D.members.find(x=>x.id===b.dataset.pay); openCharge(m.id,{checkin:true,plan:isDaily(m)&&D.plans.some(p=>p.id===m.plan&&p.on)?m.plan:undefined}); return }
+    if('walk' in b.dataset){ walkIn(q.value.trim()); return }
+    const m=D.members.find(x=>x.id===b.dataset.ci); checkIn(m); toast('Entrada de '+firstName(m)+' registrada'+(isTicket(m)?(m.entries===1?' · le queda 1 entrada':' · le quedan '+m.entries+' entradas'):'')); vAsistencia() };
+}
+function walkIn(name){
+  const daily=D.plans.find(p=>p.on&&p.tipo==='tiempo'&&p.days===1);
+  if(!daily){ toast('Activa un plan de pase diario en Membresías'); return }
+  modal(`<div class="sheet-h"><div><div class="eyebrow">Visitante</div><h2>Pase diario</h2></div>${X}</div>
+   <form id="wf" class="grid" style="gap:12px"><label class="f">Nombre del visitante<input class="inp" id="wn" required maxlength="40" value="${esc(name||'')}" placeholder="Ej. Carlos Mejía"></label>
+   <p class="muted" style="margin:0;font-size:13px">Queda registrado para que la próxima vez lo encuentres por su nombre y veas cuántas veces ha venido.</p>
+   <div class="chips"><button class="btn" type="submit">Continuar al cobro · ${money(daily.price)}</button><button class="btn ghost" type="button" data-close>Cancelar</button></div></form>`,
+  sc=>sc.querySelector('#wf').onsubmit=ev=>{ev.preventDefault(); const n=sc.querySelector('#wn').value.trim(); if(!n) return;
+    const m={id:SYNC.F.newId('gimnasios',SYNC.gid,'miembros'),n,email:'',plan:daily.id,joined:TODAY,exp:dkey(dayAt(1)),visits:[],prog:null,trainer:'',notes:'Visitante con pase diario',entries:0};
+    D.members.unshift(m); save(); closeModal(); openCharge(m.id,{plan:daily.id,checkin:true}) });
+}
+/* Pantalla de recepción (para un televisor en la entrada) */
+let kTimer=null;
+function openKiosk(){
+  const k=document.createElement('div'); k.className='kiosk'; k.setAttribute('role','dialog'); k.setAttribute('aria-label','Pantalla de recepción');
+  const draw=(flash)=>{ const t=checkinsOn(TODAY).slice(0,6); const wk=D.members.map(m=>({m,v:visitsIn(m,7)})).sort((a,b)=>b.v-a.v).slice(0,3);
+    k.innerHTML=`<div style="display:grid;gap:16px;align-content:start">
+      <div class="brand"><div class="logo" style="background:${D.brand.color}">${esc(D.brand.name[0]||'F')}</div><div><b>${esc(D.brand.name.toUpperCase())}</b><small>${esc(D.brand.sede)}</small></div></div>
+      <h1>Registra<br>tu entrada</h1><p style="font-size:18px;opacity:.85;margin:0;max-width:30ch">Abre FORJA y escanea este código. Suma tu visita, tu racha y sube en el ranking.</p>
+      <div class="qrbox" id="kqr" style="justify-self:start"></div>
+      <div class="chips"><button class="btn ghost" id="kfs">Pantalla completa</button><button class="btn ghost" id="kx">Volver al panel</button></div></div>
+     <button class="kclose" id="kx2" aria-label="Cerrar pantalla de recepción y volver al panel">✕ Volver al panel</button>
+     <div style="display:grid;gap:18px;align-content:start">
+      <div class="clock" id="kclock"></div>
+      <div><div class="eyebrow" style="color:#fff;opacity:.7;margin-bottom:8px">Acaban de llegar</div><div class="feed">${t.map((c,i)=>`<div class="fi ${flash&&i===0?'new':''}"><span class="av" style="background:${hueOf(c.m.n)}">${ini(c.m.n)}</span><span style="flex:1;min-width:0"><b>${esc(firstName(c.m))}</b>${streak(c.m)>1?` · 🔥 ${streak(c.m)} días`:''}</span><span class="num" style="opacity:.8">${hhmm(c)}</span></div>`).join('')||'<div class="fi">Sé el primero de hoy</div>'}</div></div>
+      <div><div class="eyebrow" style="color:#fff;opacity:.7;margin-bottom:8px">Top de la semana</div><div class="feed">${wk.map((x,i)=>`<div class="fi"><b style="font-family:var(--f-display);font-size:28px;width:24px;color:var(--hi)">${i+1}</b><span style="flex:1"><b>${esc(x.m.n)}</b></span><span class="num">${x.v} visitas</span></div>`).join('')}</div></div>
+     </div>`;
+    k.querySelector('#kx').onclick=closeKiosk; k.querySelector('#kx2').onclick=closeKiosk;
+    k.querySelector('#kfs').onclick=()=>{ try{ k.requestFullscreen&&k.requestFullscreen().catch(()=>toast('Tu navegador no permite pantalla completa aquí')) }catch(e){} };
+    tick(); drawQR(k.querySelector('#kqr'),200); };
+  const tick=()=>{ const c=k.querySelector('#kclock'); if(c) c.textContent=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'}) };
+  let lastN=checkinsOn(TODAY).length; window.kioskRedraw=()=>{ const n=checkinsOn(TODAY).length; draw(n>lastN); lastN=n; };
+  document.body.append(k); draw(false); kTimer=setInterval(tick,15000);
+}
+function closeKiosk(){ window.kioskRedraw=null; clearInterval(kTimer); try{ if(document.fullscreenElement) document.exitFullscreen().catch(()=>{}) }catch(e){} document.querySelectorAll('.kiosk').forEach(x=>x.remove()); render() }
+
+/* ===================== MEMBRESÍAS ===================== */
+function vMembresias(){
+  const M=D.members, month=TODAY.slice(0,7), mp=D.pays.filter(p=>p.d.slice(0,7)===month), income=mp.reduce((a,p)=>a+p.amount,0);
+  const dailyIds=new Set(D.plans.filter(p=>p.tipo==='tiempo'&&p.days===1).map(p=>p.id));
+  const dp=mp.filter(p=>dailyIds.has(p.plan)), dToday=D.pays.filter(p=>p.d===TODAY&&dailyIds.has(p.plan));
+  const soon=M.filter(m=>{const e=expIn(m);return !isDaily(m)&&status(m)!=='vencido'&&e>=0&&e<=14}).sort((a,b)=>expIn(a)-expIn(b));
+  const overdue=M.filter(m=>!isDaily(m)&&status(m)==='vencido'&&expIn(m)>=-30).sort((a,b)=>expIn(b)-expIn(a));
+  const proj=soon.reduce((a,m)=>a+planOf(m).price,0);
+  const byPlan={}; M.filter(m=>status(m)!=='vencido').forEach(m=>byPlan[m.plan]=(byPlan[m.plan]||0)+1);
+  const byMet={}; mp.forEach(p=>byMet[p.method||'sin']=(byMet[p.method||'sin']||0)+p.amount); const metMax=Math.max(1,...Object.values(byMet));
+  const row=(m,kind)=>`<div class="li"><div class="who" data-m="${m.id}" style="cursor:pointer"><span class="av" style="background:${hueOf(m.n)}">${ini(m.n)}</span><span style="min-width:0"><b>${esc(m.n)}</b><small>${esc(planOf(m).n)} · ${money(planOf(m).price)} · ${isTicket(m)&&(m.entries||0)<=0?'sin entradas':kind==='o'?'venció hace '+(-expIn(m))+' d':isTicket(m)?(m.entries===1?'queda 1 entrada':'quedan '+m.entries+' entradas'):expIn(m)===0?'vence hoy':'vence en '+expIn(m)+' d'}</small></span></div><span class="chips" style="flex-wrap:nowrap"><button class="btn sm wa" data-msg="vence" data-id="${m.id}">Recordar</button><button class="btn sm" data-charge="${m.id}">Cobrar</button></span></div>`;
+  $('#view').innerHTML=`${demoBar()}${head('Membresías','planes, pagos y vencimientos',isOwnerRole()?`<button class="btn" data-newplan>+ Nuevo plan</button>`:'')}
+  <div class="kpis">
+    <div class="kpi"><span class="eyebrow">Cobrado este mes</span><b class="num" style="font-size:clamp(24px,3.4vw,34px)">${money(income)}</b><span class="d">${mp.length} pagos</span></div>
+    <div class="kpi"><span class="eyebrow">Pases diarios</span><b class="num" style="font-size:clamp(24px,3.4vw,34px)">${money(dp.reduce((a,p)=>a+p.amount,0))}</b><span class="d">${dp.length} este mes · ${dToday.length} hoy</span></div>
+    <div class="kpi"><span class="eyebrow">Por cobrar · 14 días</span><b class="num" style="font-size:clamp(24px,3.4vw,34px)">${money(proj)}</b><span class="d">${soon.length} renovaciones</span></div>
+    <div class="kpi alert"><span class="eyebrow">Vencidos sin renovar</span><b class="num">${overdue.length}</b><span class="d">últimos 30 días</span></div>
+  </div>
+  <div class="card"><div class="card-h"><h3>Planes y tarifas</h3><span class="muted" style="font-size:13px">toca un plan para editarlo</span></div>
+    <div class="plans">${D.plans.map(p=>`<button class="plan pick" data-edit="${p.id}" style="${p.on?'':'opacity:.55'}"><span style="display:flex;justify-content:space-between;gap:6px"><span class="eyebrow">${esc(p.n)}</span>${p.on?'':'<span class="tag">Inactivo</span>'}</span><b class="num">${money(p.price)}</b><span class="muted" style="font-size:12px">${planLabel(p)}</span><span style="font-size:13px;margin-top:4px">${p.tipo==='tiempo'&&p.days===1?'<b class="num" style="font-size:14px">'+dp.filter(x=>x.plan===p.id).length+'</b> cobros este mes':'<b class="num" style="font-size:14px">'+(byPlan[p.id]||0)+'</b> miembros vigentes'}</span></button>`).join('')}
+    <button class="plan pick newp" data-newplan><span style="font-size:28px;line-height:1">+</span><span style="font-weight:700">Nuevo plan</span><span class="muted" style="font-size:12px">Pase diario, quincena, tiquetera…</span></button></div></div>
+  <div class="g2">
+    <div class="card"><div class="card-h"><h3>Medios de pago</h3><span class="muted" style="font-size:13px">activa los que recibes</span></div>
+      <div class="chips" style="margin-bottom:12px">${D.methods.map(x=>`<button class="chip" data-met="${x.id}" aria-pressed="${x.on}">${x.on?'✓ ':''}${esc(x.n)}</button>`).join('')}</div>
+      <form id="mf" style="display:flex;gap:8px;margin-bottom:14px"><input class="inp" id="mn" maxlength="24" placeholder="Agregar otro, ej. Bancolombia QR" aria-label="Nuevo medio de pago"><button class="btn sm" type="submit">Agregar</button></form>
+      <div class="eyebrow" style="margin-bottom:6px">Recaudo del mes por medio</div>
+      <div class="list">${Object.entries(byMet).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="li"><span style="flex:0 0 110px;font-weight:600">${esc(methodName(k))}</span><div class="bar" style="flex:1 1 80px"><i style="width:${v/metMax*100}%"></i></div><span class="num" style="flex:none">${money(v)}</span></div>`).join('')||'<div class="empty">Sin pagos este mes.</div>'}</div></div>
+    <div class="card"><div class="card-h"><h3>Pagos recientes</h3></div><div class="list">${D.pays.slice().sort((a,b)=>b.d.localeCompare(a.d)).slice(0,10).map(p=>{const m=D.members.find(x=>x.id===p.m);return m?`<div class="li"><div class="who"><span class="num muted" style="flex:none;min-width:58px;white-space:nowrap">${fdate(p.d)}</span><span class="av" style="background:${hueOf(m.n)}">${ini(m.n)}</span><span style="min-width:0"><b style="white-space:normal">${esc(m.n)}</b><small>${esc((D.plans.find(x=>x.id===p.plan)||{n:'Plan'}).n)} · ${esc(methodName(p.method))}</small></span></div><span class="num" style="flex:none">${money(p.amount)}</span></div>`:''}).join('')}</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-h"><h3>Vencen pronto</h3><span class="num muted">${soon.length}</span></div><div class="list">${soon.map(m=>row(m,'s')).join('')||'<div class="empty">Nada por vencer en 14 días.</div>'}</div></div>
+    <div class="card"><div class="card-h"><h3>Vencidos</h3><span class="num muted">${overdue.length}</span></div><div class="list">${overdue.map(m=>row(m,'o')).join('')||'<div class="empty">No hay planes vencidos.</div>'}</div></div>
+  </div>`;
+  bindCommon(e=>{ const t=e.target.closest('[data-charge],[data-edit],[data-newplan],[data-met]'); if(!t) return false;
+    if(!t.dataset.charge&&!isOwnerRole()){ toast('Solo el dueño puede cambiar planes y medios de pago'); return true }
+    if(t.dataset.charge) openCharge(t.dataset.charge);
+    else if(t.dataset.edit) planEditor(t.dataset.edit);
+    else if('newplan' in t.dataset) planEditor(null);
+    else { const x=D.methods.find(y=>y.id===t.dataset.met); if(x.on&&D.methods.filter(y=>y.on).length===1){toast('Debe quedar al menos un medio de pago activo');return true} x.on=!x.on; save(); vMembresias() }
+    return true });
+  if(!isOwnerRole()) $('#mf').hidden=true;
+  $('#mf').onsubmit=ev=>{ev.preventDefault(); const n=$('#mn').value.trim(); if(!n) return; D.methods.push({id:'mt'+Date.now(),n,on:true}); save(); vMembresias(); toast(n+' agregado como medio de pago')};
+}
+function planEditor(id){
+  const p=id?{...D.plans.find(x=>x.id===id)}:{n:'',tipo:'tiempo',days:1,price:10000,entries:10,on:true};
+  const used=id?D.members.filter(m=>m.plan===id).length:0;
+  const PRE=[['Pase diario','tiempo',1,10000],['Semanal','tiempo',7,40000],['Quincenal','tiempo',15,70000],['Mensual','tiempo',30,120000],['Tiquetera 10','entradas',60,85000,10],['Tiquetera 20','entradas',90,150000,20]];
+  modal(`<div class="sheet-h"><div><div class="eyebrow">${id?'Editar plan':'Nuevo plan'}</div><h2>${id?esc(p.n):'Crear plan'}</h2></div>${X}</div>
+   <form id="pef" class="grid" style="gap:14px">
+    ${id?'':`<div class="f"><span>Empieza con un modelo</span><div class="chips" id="pre">${PRE.map((x,i)=>`<button type="button" class="chip" data-pre="${i}">${x[0]}</button>`).join('')}</div></div>`}
+    <label class="f">Nombre del plan<input class="inp" id="pN" required maxlength="30" value="${esc(p.n)}" placeholder="Ej. Pase diario"></label>
+    <div class="f"><span>Tipo de cobro</span><div class="seg2" id="pT"><button type="button" data-t="tiempo" aria-pressed="${p.tipo==='tiempo'}"><b>Por tiempo</b><small>Día, semana, mes, año…</small></button><button type="button" data-t="entradas" aria-pressed="${p.tipo==='entradas'}"><b>Por entradas</b><small>Tiquetera con N visitas</small></button></div></div>
+    <div class="g2"><label class="f">Precio<input class="inp num" id="pP" inputmode="numeric" value="${p.price}"></label>
+      <label class="f" id="pDl"><span id="pDt">${p.tipo==='entradas'?'Vigencia (días)':'Duración (días)'}</span><input class="inp num" id="pD" type="number" min="1" max="730" value="${p.days}"></label></div>
+    <label class="f" id="pEl" ${p.tipo==='entradas'?'':'hidden'}>Número de entradas<input class="inp num" id="pE" type="number" min="1" max="200" value="${p.entries||10}"></label>
+    <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="pOn" ${p.on?'checked':''}> Plan activo (aparece al cobrar)</label>
+    ${used?`<p class="muted" style="margin:0;font-size:13px">${used} miembros tienen este plan. Los cambios de precio aplican desde su próximo pago.</p>`:''}
+    <div class="chips"><button class="btn" type="submit">Guardar plan</button>${id&&!used?'<button class="btn ghost" type="button" id="pDel">Eliminar</button>':''}<button class="btn ghost" type="button" data-close>Cancelar</button></div>
+   </form>`,
+  sc=>{ let tipo=p.tipo; const setT=t=>{tipo=t; sc.querySelectorAll('[data-t]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t)); sc.querySelector('#pEl').hidden=t!=='entradas'; sc.querySelector('#pDt').textContent=t==='entradas'?'Vigencia (días)':'Duración (días)'};
+    sc.querySelector('#pT').onclick=e=>{const b=e.target.closest('[data-t]'); if(b) setT(b.dataset.t)};
+    sc.querySelector('#pre')?.addEventListener('click',e=>{const b=e.target.closest('[data-pre]'); if(!b) return; const x=PRE[+b.dataset.pre]; sc.querySelector('#pN').value=x[0]; setT(x[1]); sc.querySelector('#pD').value=x[2]; sc.querySelector('#pP').value=x[3]; if(x[4]) sc.querySelector('#pE').value=x[4]});
+    sc.querySelector('#pDel')?.addEventListener('click',()=>{ D.plans=D.plans.filter(x=>x.id!==id); save(); closeModal(); vMembresias(); toast('Plan eliminado') });
+    sc.querySelector('#pef').onsubmit=ev=>{ev.preventDefault();
+      const np={id:id||'p'+Date.now(),n:sc.querySelector('#pN').value.trim(),tipo,days:Math.max(1,parseInt(sc.querySelector('#pD').value)||1),price:parseInt(String(sc.querySelector('#pP').value).replace(/\D/g,''))||0,on:sc.querySelector('#pOn').checked};
+      if(tipo==='entradas') np.entries=Math.max(1,parseInt(sc.querySelector('#pE').value)||10);
+      if(!np.on&&D.plans.filter(x=>x.on&&x.id!==np.id).length===0){toast('Debe quedar al menos un plan activo');return}
+      if(id) D.plans[D.plans.findIndex(x=>x.id===id)]=np; else D.plans.push(np);
+      save(); closeModal(); vMembresias(); toast(id?'Plan actualizado':'Plan creado. Ya puedes cobrarlo') };
+  });
+}
+/* ===================== PROGRAMAS Y RETOS ===================== */
+function retoProgress(r,m){ if(r.tipo==='visitas') return m.visits.filter(v=>v.d.slice(0,7)===TODAY.slice(0,7)).length; if(r.tipo==='racha') return streak(m); return 0 }
+function vProgramas(){
+  const cnt={}; D.members.forEach(m=>{ if(m.prog) cnt[m.prog]=(cnt[m.prog]||0)+1 });
+  $('#view').innerHTML=`${head('Programas y retos','contenido para tus miembros',`<button class="btn" data-newprog>+ Crear programa</button><button class="btn hi" data-newreto>+ Crear reto</button>`)}
+  <div class="card"><div class="card-h"><h3>Retos del gimnasio</h3><span class="muted" style="font-size:13px">los miembros los ven en su app y compiten</span></div>
+    <div class="g2">${D.retos.length?'':'<div class="empty">Aún no hay retos. Crea el primero con “+ Crear reto”: participan todos tus miembros.</div>'}${D.retos.map(r=>{const P=((r.parts&&r.parts.length)?r.parts.map(id=>D.members.find(m=>m.id===id)).filter(Boolean):D.members).map(m=>({m,v:retoProgress(r,m)})).sort((a,b)=>b.v-a.v); const done=P.filter(x=>x.v>=r.meta).length; const left=daysBetween(TODAY,r.fin);
+      return `<div class="plan" style="gap:10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><span class="eyebrow">${r.tipo==='visitas'?'Visitas en el mes':r.tipo==='racha'?'Días seguidos':'Reto'} · meta ${r.meta}</span><h3 style="font-size:28px;margin-top:4px">${esc(r.n)}</h3></div><span class="tag">${left>0?'Faltan '+left+' días':'Terminado'}</span></div>
+      <span style="font-size:13px">🏆 ${esc(r.premio)}</span>
+      <div class="minis"><div class="mini" style="background:var(--surface)"><span class="eyebrow">Inscritos</span><b class="num">${P.length}</b></div><div class="mini" style="background:var(--surface)"><span class="eyebrow">Ya cumplieron</span><b class="num">${done}</b></div><div class="mini" style="background:var(--surface)"><span class="eyebrow">Líder</span><b class="num" style="font-size:22px;padding-top:6px">${P[0]?P[0].v:0}</b></div></div>
+      <div class="list">${P.slice(0,3).map((x,i)=>`<div class="li"><div class="who"><b style="font-family:var(--f-display);font-size:22px;width:18px;color:var(--accent)">${i+1}</b><span class="av" style="background:${hueOf(x.m.n)}">${ini(x.m.n)}</span><b>${esc(x.m.n)}</b></div><span class="num">${x.v}/${r.meta}</span></div>`).join('')}</div>
+      <button class="btn sm ghost" data-share="${r.id}">Copiar invitación para el grupo de WhatsApp</button></div>`}).join('')}</div></div>
+  ${D.customProgs.length?`<div class="card"><div class="card-h"><h3>Programas de ${esc(D.brand.name)}</h3></div><div class="list">${D.customProgs.map(p=>`<div class="li"><div><b>${esc(p.n)}</b><div class="muted" style="font-size:13px">${LV[p.l]} · ${p.days.length} días · ${p.days.reduce((a,d)=>a+d.x.length,0)} ejercicios</div></div><span class="chips"><span class="tag" style="background:var(--hi);color:var(--hi-ink);border-color:transparent">Del gimnasio</span><span class="num muted">${cnt[p.id]||0} miembros</span></span></div>`).join('')}</div></div>`:''}
+  <div class="card"><div class="card-h"><h3>Programas FORJA</h3><span class="muted" style="font-size:13px">incluidos en la app</span></div>
+    <div class="tablewrap" style="border:0"><table style="min-width:560px"><thead><tr><th>Programa</th><th>Nivel</th><th>Días / semana</th><th>Semanas</th><th>Miembros siguiéndolo</th></tr></thead><tbody>${PROGS.map(p=>`<tr style="cursor:default"><td><b>${p[1]}</b></td><td>${LV[p[2]]}</td><td class="num">${p[3]}</td><td class="num">${p[4]}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:120px"><i style="width:${Math.min(100,(cnt[p[0]]||0)/12*100)}%"></i></div><span class="num">${cnt[p[0]]||0}</span></div></td></tr>`).join('')}</tbody></table></div></div>`;
+  $('#view').onclick=e=>{const t=e.target.closest('[data-newprog],[data-newreto],[data-share]'); if(!t) return;
+    if('newprog' in t.dataset) progBuilder(); else if('newreto' in t.dataset) newReto();
+    else { const r=D.retos.find(x=>x.id===t.dataset.share); copy(`🏆 Reto ${r.n} en ${D.brand.name}\nMeta: ${r.meta} ${r.tipo==='visitas'?'visitas este mes':'días seguidos'}\nPremio: ${r.premio}\nEntra a FORJA (${appUrl()}) y compite con todo el gym 💪 #RetoForja`,'Invitación copiada') } };
+}
+function progBuilder(){
+  const P={n:'',l:1,days:[{n:'Día A',x:[]}]};
+  const draw=sc=>{ sc.querySelector('#days').innerHTML=P.days.map((d,i)=>`<div class="dayb"><div style="display:flex;gap:8px;align-items:center"><input class="inp" data-dn="${i}" value="${esc(d.n)}" aria-label="Nombre del día" style="font-weight:700">${P.days.length>1?`<button type="button" class="iconbtn" data-rmd="${i}" aria-label="Quitar día">✕</button>`:''}</div>
+     ${d.x.map((x,j)=>`<div class="exrow"><span>${esc(EXI[x[0]])}</span><span class="num">${x[1]} × ${esc(x[2])}</span><button type="button" class="iconbtn" data-rmx="${i}-${j}" aria-label="Quitar ejercicio">✕</button></div>`).join('')||'<span class="muted" style="font-size:13px">Añade ejercicios a este día.</span>'}
+     <div class="addrow"><select class="inp" id="se${i}" aria-label="Ejercicio">${EXN.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select><input class="inp" id="ss${i}" value="3" inputmode="numeric" aria-label="Series"><input class="inp" id="sr${i}" value="10–12" aria-label="Repeticiones"><button type="button" class="btn sm" data-addx="${i}">Añadir</button></div></div>`).join(''); };
+  modal(`<div class="sheet-h"><div><div class="eyebrow">Programa propio</div><h2>Crear programa</h2></div>${X}</div>
+   <form id="pf" class="grid" style="gap:12px">
+     <div class="g2"><label class="f">Nombre<input class="inp" id="pn" required maxlength="40" placeholder="Ej. Reto verano Iron Box"></label>
+     <label class="f">Nivel<select class="inp" id="pl"><option value="1">Principiante</option><option value="2">Intermedio</option><option value="3">Avanzado</option></select></label></div>
+     <div id="days" class="grid" style="gap:10px"></div>
+     <button type="button" class="btn ghost" id="addd">+ Añadir día</button>
+     <div class="chips"><button class="btn" type="submit">Guardar programa</button><button class="btn ghost" type="button" data-close>Cancelar</button></div></form>`,
+  sc=>{ draw(sc);
+    sc.querySelector('#addd').onclick=()=>{ P.days.push({n:'Día '+String.fromCharCode(65+P.days.length),x:[]}); draw(sc) };
+    sc.querySelector('#days').addEventListener('click',e=>{const t=e.target.closest('button'); if(!t) return;
+      if(t.dataset.addx){const i=+t.dataset.addx; P.days[i].x.push([sc.querySelector('#se'+i).value, parseInt(sc.querySelector('#ss'+i).value)||3, sc.querySelector('#sr'+i).value||'10']); draw(sc)}
+      if(t.dataset.rmx){const [i,j]=t.dataset.rmx.split('-').map(Number); P.days[i].x.splice(j,1); draw(sc)}
+      if(t.dataset.rmd){P.days.splice(+t.dataset.rmd,1); draw(sc)} });
+    sc.querySelector('#days').addEventListener('input',e=>{ if(e.target.dataset.dn!==undefined) P.days[+e.target.dataset.dn].n=e.target.value });
+    sc.querySelector('#pf').onsubmit=ev=>{ev.preventDefault(); const n=sc.querySelector('#pn').value.trim(); if(!P.days.some(d=>d.x.length)){toast('Añade al menos un ejercicio');return}
+      D.customProgs.push({id:'c'+Date.now(),n,l:+sc.querySelector('#pl').value,days:P.days.filter(d=>d.x.length)}); save(); closeModal(); render(); toast('Programa guardado. Ya puedes asignarlo a tus miembros') };
+  });
+}
+function newReto(){
+  modal(`<div class="sheet-h"><div><div class="eyebrow">Competencia interna</div><h2>Crear reto</h2></div>${X}</div>
+   <form id="rf" class="grid" style="gap:12px">
+     <label class="f">Nombre del reto<input class="inp" id="rn" required maxlength="40" placeholder="Ej. Noviembre sin excusas"></label>
+     <div class="g2"><label class="f">Tipo<select class="inp" id="rt"><option value="visitas">Visitas en el mes</option><option value="racha">Días seguidos</option></select></label>
+     <label class="f">Meta<input class="inp" id="rm" type="number" min="1" max="60" value="16"></label></div>
+     <div class="g2"><label class="f">Termina el<input class="inp" id="rd" type="date" value="${dkey(dayAt(-30))}"></label>
+     <label class="f">Premio<input class="inp" id="rp" maxlength="60" placeholder="Ej. 1 mes gratis" value="1 mes gratis"></label></div>
+     <div class="chips"><button class="btn" type="submit">Publicar reto</button><button class="btn ghost" type="button" data-close>Cancelar</button></div></form>`,
+  sc=>sc.querySelector('#rf').onsubmit=ev=>{ev.preventDefault();
+    D.retos.unshift({id:'r'+Date.now(),n:sc.querySelector('#rn').value.trim(),tipo:sc.querySelector('#rt').value,meta:+sc.querySelector('#rm').value||10,fin:sc.querySelector('#rd').value||dkey(dayAt(-30)),premio:sc.querySelector('#rp').value||'Reconocimiento en el gym',parts:[]});
+    save(); closeModal(); render(); toast('Reto publicado. Comparte la invitación en el grupo') });
+}
+
+/* ===================== EQUIPO ===================== */
+let tSel=null;
+function vEntrenadores(){
+  const T=D.team.slice().sort((a,b)=>String(a.n).localeCompare(String(b.n)));
+  const card=t=>{ const ms=D.members.filter(m=>m.trainer===t.id), r=ms.filter(m=>status(m)==='riesgo'), c=t.color||'#2143F0';
+    return `<div class="card grid" style="gap:12px"><div class="who"><span class="av" style="width:52px;height:52px;font-size:18px;background:${c}">${ini(t.n||t.id)}</span><div style="min-width:0"><h3 style="font-size:26px">${esc(t.n)}</h3><span class="muted" style="font-size:13px">${ROLE_NAME[t.rol]||''} · ${esc(t.email||t.id)}</span></div></div>
+     <span class="pill ${t.uid?'activo':'riesgo'}">${t.uid?'Cuenta activa':'Invitación pendiente'}</span>
+     ${t.rol==='entrenador'?`<div class="minis"><div class="mini"><span class="eyebrow">Asignados</span><b class="num">${ms.length}</b></div><div class="mini"><span class="eyebrow">En riesgo</span><b class="num" style="color:${r.length?'var(--warn)':'inherit'}">${r.length}</b></div><div class="mini"><span class="eyebrow">Activos</span><b class="num">${ms.length?Math.round(ms.filter(m=>['activo','nuevo'].includes(status(m))).length/ms.length*100):0}%</b></div></div>
+     ${r.length?`<div style="font-size:13px"><b>Por contactar:</b> ${r.slice(0,4).map(m=>`<button class="chip" data-m="${m.id}">${esc(m.n)}</button>`).join(' ')}</div>`:''}`:''}
+     <div class="chips">${t.uid?'':`<button class="btn sm wa" data-inv="${esc(t.id)}">Copiar invitación</button>`}<button class="btn sm ghost" data-rm="${esc(t.id)}">Quitar del equipo</button></div></div>`; };
+  $('#view').innerHTML=`${head('Equipo',T.length+(T.length===1?' persona':' personas'))}
+  <div class="card"><div class="card-h"><h3>Invitar al equipo</h3></div>
+    <form id="tf" class="g2" style="align-items:end">
+      <label class="f">Nombre<input class="inp" id="tN" required maxlength="40" placeholder="Ej. Natalia Gómez"></label>
+      <label class="f">Correo<input class="inp" id="tE" type="email" required maxlength="80" placeholder="correo@ejemplo.com"></label>
+      <label class="f">Rol<select class="inp" id="tR"><option value="recepcion">Recepción: cobra, registra entradas e inscribe miembros</option><option value="entrenador">Entrenador: sus miembros, programas y notas</option></select></label>
+      <button class="btn" type="submit">Invitar</button>
+    </form>
+    <p class="muted" style="font-size:13px;margin:10px 0 0">La persona entra a ${esc(appUrl())}, toca Crear cuenta y usa el código <b class="num">${esc(D.code)}</b> con ese mismo correo.</p></div>
+  ${T.length?`<div class="g2">${T.map(card).join('')}</div>`:'<div class="empty">Aún no has invitado a nadie. Tu equipo no ve ingresos ni puede cambiar precios.</div>'}`;
+  bindCommon(e=>{ const inv=e.target.closest('[data-inv]'), rm=e.target.closest('[data-rm]'); if(!inv&&!rm) return false;
+    const t=D.team.find(x=>x.id===(inv||rm).dataset[inv?'inv':'rm']);
+    if(inv){ copy(`Hola ${String(t.n).split(' ')[0]} 👋 Te invito al equipo de ${D.brand.name} en FORJA como ${ROLE_NAME[t.rol].toLowerCase()}. Entra a ${appUrl()} → Crear cuenta → código *${D.code}*, con el correo ${t.email}.`,'Invitación copiada'); return true }
+    modal(`<h2 style="font-size:30px">¿Quitar a ${esc(t.n)}?</h2><p class="muted">Perderá el acceso al panel. Sus miembros asignados quedan sin entrenador.</p><div class="chips"><button class="btn" id="doRm">Quitar</button><button class="btn ghost" data-close>Cancelar</button></div>`,
+      sc=>sc.querySelector('#doRm').onclick=async()=>{ const {F,gid}=SYNC; try{ if(t.uid) await F.fs.deleteDoc(F.fs.doc(F.db,'usuarios',t.uid)); await F.fs.deleteDoc(F.fs.doc(F.db,'gimnasios',gid,'equipo',t.id)); closeModal(); toast(t.n+' ya no está en el equipo'); }catch(err){ fail(err) } });
+    return true });
+  $('#tf').onsubmit=async ev=>{ ev.preventDefault(); const n=$('#tN').value.trim(), email=$('#tE').value.trim().toLowerCase(), rol=$('#tR').value; if(!n||!email) return;
+    if(email===SYNC.email){ toast('Ese es tu propio correo'); return }
+    const {F,gid}=SYNC; try{ await F.fs.setDoc(F.fs.doc(F.db,'gimnasios',gid,'equipo',email),{n,email,rol,uid:null,color:TEAM_COLORS[D.team.length%TEAM_COLORS.length],created:F.fs.serverTimestamp()}); toast('Invitación creada. Toca “Copiar invitación” para enviarla'); }catch(err){ fail(err) } };
+}
+
+/* ===================== MI MARCA ===================== */
+function vMarca(){
+  const b=D.brand;
+  $('#view').innerHTML=`${head('Mi marca','así ven tus miembros la app')}
+  <div class="g2">
+    <div class="card grid" style="gap:14px">
+      <label class="f">Nombre del gimnasio<input class="inp" id="bn" maxlength="28" value="${esc(b.name)}"></label>
+      <label class="f">Sede<input class="inp" id="bs" maxlength="40" value="${esc(b.sede)}"></label>
+      <div class="f"><span>Color de la marca</span><div class="swatches">${COLORS.map(([c,n])=>`<button class="sw" data-c="${c}" style="background:${c}" aria-pressed="${b.color===c}" aria-label="${n}" title="${n}"></button>`).join('')}</div></div>
+      <label class="f">Mensaje de bienvenida<textarea class="inp" id="bw" rows="2" maxlength="120">${esc(b.welcome)}</textarea></label>
+      <p class="muted" style="font-size:13px;margin:0">Los cambios se ven al instante en la app de todos tus miembros.</p>
+      <hr style="border:0;border-top:1px solid var(--line);width:100%">
+      <div class="plan"><span class="eyebrow">Código del gimnasio</span><b class="num" style="letter-spacing:.15em">${esc(D.code)}</b>
+        <span class="muted" style="font-size:13px">Tus miembros y tu equipo lo usan para crear su cuenta en ${esc(appUrl())}</span>
+        <button class="btn sm ghost" id="cpCode" style="justify-self:start;margin-top:6px">Copiar código y enlace</button></div>
+    </div>
+    <div class="card"><div class="eyebrow" style="text-align:center;margin-bottom:10px">Vista previa · app de miembros</div>
+      <div class="phone"><div class="ph-top"><div class="logo" style="width:30px;height:30px;font-size:18px;background:${b.color}">${esc((b.name[0]||'F').toUpperCase())}</div><div><b style="font-family:var(--f-display);font-size:18px;line-height:1">${esc(b.name.toUpperCase())}</b><div style="font-size:11px;color:#5A6580">${esc(b.sede)}</div></div></div>
+        <div class="ph-hero" style="background:${b.color}"><div style="font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;opacity:.8">HOLA, ATLETA</div><h4>No rompas<br>la racha</h4><div style="font-size:12px;opacity:.9">${esc(b.welcome)}</div><div style="margin-top:10px;display:inline-block;background:#FFD23F;color:#231A00;font-weight:700;font-size:12px;padding:7px 12px;border-radius:9px">Entrenar: Día B</div></div>
+        <div class="ph-card"><div style="font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:#5A6580">RETO DEL GYM</div><b style="font-family:var(--f-display);font-size:20px;text-transform:uppercase">${esc(D.retos[0]?.n||'Reto del mes')}</b><div style="height:6px;background:#EDF0F7;border-radius:9px;margin-top:6px"><div style="width:62%;height:100%;background:${b.color};border-radius:9px"></div></div></div>
+        <div class="ph-card" style="display:flex;justify-content:space-between"><span>Ranking ${esc(b.name)}</span><b>#1</b></div></div></div>
+  </div>`;
+  const up=()=>{ b.name=$('#bn').value.trim()||'Mi gimnasio'; b.sede=$('#bs').value.trim(); b.welcome=$('#bw').value.trim(); save(); };
+  ['#bn','#bs','#bw'].forEach(s=>$(s).onchange=()=>{up();vMarca();nav()});
+  $('#view').querySelectorAll('[data-c]').forEach(x=>x.onclick=()=>{b.color=x.dataset.c; save(); vMarca(); nav()});
+  $('#cpCode').onclick=()=>copy(`Únete a ${b.name} en FORJA: ${appUrl()} → Crear cuenta → código ${D.code}`,'Código y enlace copiados');
+}
+
+render();
+boot();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body>
+</html>
