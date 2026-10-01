@@ -1,0 +1,122 @@
+rules_version = '2';
+// FORJA · Reglas de seguridad de Firestore
+// Cada gimnasio solo ve sus datos. Roles: dueno, recepcion, entrenador, miembro.
+// El rol de cada usuario vive en /usuarios/{uid} (funciona en el plan gratuito, sin Cloud Functions).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function uPath() { return /databases/$(database)/documents/usuarios/$(request.auth.uid); }
+    function hasProfile() { return signedIn() && exists(uPath()); }
+    function me() { return get(uPath()).data; }
+    function inGym(g) { return hasProfile() && me().gymId == g; }
+    function isStaff(g) { return inGym(g) && me().rol in ['dueno', 'recepcion', 'entrenador']; }
+    function isFront(g) { return inGym(g) && me().rol in ['dueno', 'recepcion']; }
+    function isOwner(g) { return inGym(g) && me().rol == 'dueno'; }
+    function isMemberSelf(g, m) { return inGym(g) && me().rol == 'miembro' && me().memberId == m; }
+    function myEmail() { return request.auth.token.email; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function gymDoc(g) { return /databases/$(database)/documents/gimnasios/$(g); }
+
+    // ---------- Perfiles de usuario ----------
+    match /usuarios/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isStaff(resource.data.gymId));
+      allow create: if signedIn() && request.auth.uid == uid && (
+        // Dueño: se crea en la misma operación que su gimnasio
+        (request.resource.data.rol == 'dueno'
+          && getAfter(gymDoc(request.resource.data.gymId)).data.owner == uid)
+        // Equipo: debe existir una invitación con su correo y ese rol
+        || (request.resource.data.rol in ['recepcion', 'entrenador']
+          && exists(/databases/$(database)/documents/gimnasios/$(request.resource.data.gymId)/equipo/$(myEmail()))
+          && get(/databases/$(database)/documents/gimnasios/$(request.resource.data.gymId)/equipo/$(myEmail())).data.rol == request.resource.data.rol)
+        // Miembro: debe quedar vinculado a su ficha en la misma operación
+        || (request.resource.data.rol == 'miembro'
+          && getAfter(/databases/$(database)/documents/gimnasios/$(request.resource.data.gymId)/miembros/$(request.resource.data.memberId)).data.uid == uid)
+      );
+      // Cada quien edita su nombre y el estado de su app; nunca su rol ni su gimnasio
+      allow update: if signedIn() && request.auth.uid == uid && changed().hasOnly(['n', 'app', 'updated']);
+      // El dueño puede quitarle el acceso a alguien de su equipo
+      allow delete: if hasProfile() && isOwner(resource.data.gymId) && resource.data.rol in ['recepcion', 'entrenador'];
+    }
+
+    // ---------- Gimnasios ----------
+    match /gimnasios/{g} {
+      // Nombre, color, planes y código son públicos para usuarios con sesión (para unirse con el código)
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.owner == request.auth.uid;
+      allow update: if isOwner(g) && request.resource.data.owner == resource.data.owner;
+      allow delete: if false;
+
+      match /miembros/{m} {
+        allow read: if isStaff(g)
+          || isMemberSelf(g, m)
+          || (signedIn() && resource.data.email == myEmail());   // para vincular la cuenta la primera vez
+        allow create: if isFront(g) && request.resource.data.uid == null;
+        allow update: if isStaff(g)
+          // Vinculación: el dueño del correo toma una ficha libre
+          || (signedIn() && resource.data.email == myEmail() && resource.data.uid == null
+              && request.resource.data.uid == request.auth.uid && changed().hasOnly(['uid']))
+          // El miembro puede elegir programa y gastar 1 entrada de su tiquetera al entrar
+          || (isMemberSelf(g, m) && changed().hasOnly(['prog', 'entries'])
+              && request.resource.data.get('entries', 0) <= resource.data.get('entries', 0)
+              && request.resource.data.get('entries', 0) >= resource.data.get('entries', 0) - 1);
+        allow delete: if isOwner(g);
+
+        match /sesiones/{s} {
+          allow read: if isStaff(g) || isMemberSelf(g, m);
+          allow create, delete: if isMemberSelf(g, m);
+          allow update: if false;
+        }
+      }
+
+      match /pagos/{p} {
+        allow read: if isFront(g) || (inGym(g) && resource.data.m == me().get('memberId', ''));
+        allow create: if isFront(g) && request.resource.data.by == request.auth.uid;
+        allow update: if false;
+        allow delete: if isOwner(g);
+      }
+
+      match /asistencias/{a} {
+        allow read: if isStaff(g) || (inGym(g) && resource.data.m == me().get('memberId', ''));
+        // Equipo: registro manual. Miembro: solo con el código QR vigente del día, una vez por día.
+        allow create: if isStaff(g)
+          || (isMemberSelf(g, request.resource.data.m)
+              && request.resource.data.via == 'qr'
+              && a == request.resource.data.m + '_' + request.resource.data.d
+              && request.resource.data.ts == request.time
+              && request.resource.data.k == get(/databases/$(database)/documents/gimnasios/$(g)/privado/qr).data.k);
+        allow update: if false;
+        allow delete: if isStaff(g);
+      }
+
+      // Código QR del día: solo lo ve el equipo
+      match /privado/{d} {
+        allow read, write: if isStaff(g);
+      }
+
+      // Invitaciones y fichas del equipo (id = correo en minúsculas)
+      match /equipo/{email} {
+        allow read: if isStaff(g) || (signedIn() && email == myEmail());
+        allow create, delete: if isOwner(g);
+        allow update: if isOwner(g)
+          || (signedIn() && email == myEmail() && changed().hasOnly(['uid']) && request.resource.data.uid == request.auth.uid);
+      }
+
+      match /programas/{p} {
+        allow read: if inGym(g);
+        allow write: if isStaff(g);
+      }
+
+      match /retos/{r} {
+        allow read: if inGym(g);
+        allow write: if isStaff(g);
+      }
+
+      // Ranking semanal: cada miembro escribe solo su fila
+      match /ranking/{m} {
+        allow read: if inGym(g);
+        allow write: if isMemberSelf(g, m) && request.resource.data.uid == request.auth.uid;
+      }
+    }
+  }
+}
