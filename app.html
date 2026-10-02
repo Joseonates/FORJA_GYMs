@@ -307,6 +307,7 @@ svg.body .m.sec{fill:color-mix(in srgb,var(--accent) 38%,var(--muscle))}
     <div class="chips" style="flex-wrap:nowrap">
       <span class="pill fire" id="topStreak" title="Racha de días">🔥 0</span>
       <span class="pill" id="topLevel">Nv 1</span>
+      <button type="button" class="pill" id="topOut" style="cursor:pointer;font:inherit;font-weight:600;font-size:13px;color:inherit" aria-label="Cerrar sesión"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Salir</button>
     </div>
   </header>
 </div>
@@ -1140,6 +1141,12 @@ function rProg(){
   </div>`;
   $('#pName').onchange=e=>{S.name=e.target.value.trim()||'Atleta';save();header()};
   $('#pOut').onclick=()=>CTX&&CTX.F.logout();
+}
+$('#topOut').onclick=()=>{
+  modal(`<div class="sheet-h"><h2>¿Cerrar sesión?</h2><button class="iconbtn" data-close aria-label="Cancelar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+   <p class="muted" style="margin:0 0 14px">Tu progreso queda guardado. Para volver, entra con tu correo y tu contraseña.</p>
+   <div class="chips"><button class="btn" id="outYes">Cerrar sesión</button><button class="btn ghost" data-close>Cancelar</button></div>`,
+  sc=>sc.querySelector('#outYes').onclick=()=>{ if(CTX) CTX.F.logout(); else location.replace('index.html') });
 }
 
 /* ===================== RANKING ===================== */
