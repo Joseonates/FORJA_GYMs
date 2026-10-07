@@ -1,14 +1,16 @@
 // FORJA · conexión con Firebase (compartida por index.html, panel.html y app.html)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, limit, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, limit, writeBatch, serverTimestamp, increment, Timestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
+import { FORJA } from "./forja-config.js";
+export { FORJA };
 
 export const configured = ["apiKey", "authDomain", "projectId", "appId"].every(k => firebaseConfig[k] && !String(firebaseConfig[k]).startsWith("PEGA"));
 export const app = configured ? initializeApp(firebaseConfig) : null;
 export const auth = configured ? getAuth(app) : null;
 export const db = configured ? getFirestore(app) : null;
-export const fs = { doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, limit, writeBatch, serverTimestamp };
+export const fs = { doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, limit, writeBatch, serverTimestamp, increment, Timestamp };
 
 /* ---------- utilidades ---------- */
 export const dkey = d => { const x = new Date(d); return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); };
@@ -30,6 +32,36 @@ export const DEF_METHODS = [
   { id: "efectivo", n: "Efectivo", on: true }, { id: "nequi", n: "Nequi", on: true }, { id: "daviplata", n: "Daviplata", on: true },
   { id: "transferencia", n: "Transferencia", on: true }, { id: "tarjeta", n: "Tarjeta", on: true }
 ];
+
+/* ---------- suscripción a FORJA (planes del gimnasio) ---------- */
+export const PRUEBA_DIAS = 60;
+export const TIERS = {
+  gratis:   { id: "gratis",   n: "Gratis",   price: 0,      max: 30 },
+  gimnasio: { id: "gimnasio", n: "Gimnasio", price: 79000,  max: 200 },
+  pro:      { id: "pro",      n: "Pro",      price: 149000, max: Infinity }
+};
+/* Qué plan necesita cada función */
+export const FEAT_TIER = { wa: "gimnasio", retos: "gimnasio", kiosk: "gimnasio", progs: "pro" };
+const RANK = { gratis: 0, gimnasio: 1, pro: 2 };
+export const toMs = v => v == null ? null : typeof v === "number" ? v : v.toMillis ? v.toMillis() : v.seconds ? v.seconds * 1000 : new Date(v).getTime();
+/** Plan efectivo del gimnasio hoy: {id, trial, hasta, grace, expired, fundador} */
+export function tierOf(gym, now = Date.now()) {
+  const s = (gym && gym.sus) || {}, hasta = toMs(s.hasta), GRACIA = 5 * 864e5;
+  if (!s.plan) { // gimnasios creados antes de los planes: prueba desde su creación
+    const c = toMs(gym && gym.created), fin = c ? c + PRUEBA_DIAS * 864e5 : null;
+    return fin && now < fin ? { id: "pro", trial: true, hasta: fin } : { id: "gratis", expired: "prueba" };
+  }
+  if (s.plan === "prueba") return hasta && now < hasta ? { id: "pro", trial: true, hasta } : { id: "gratis", expired: "prueba" };
+  if (s.plan === "gratis" || !TIERS[s.plan]) return { id: "gratis" };
+  if (!hasta || now < hasta + GRACIA) return { id: s.plan, hasta, fundador: !!s.fundador, grace: !!hasta && now > hasta };
+  return { id: "gratis", expired: s.plan, hasta };
+}
+export const tierAllows = (t, feat) => RANK[t.id] >= RANK[FEAT_TIER[feat] || "gratis"];
+export const daysLeft = ms => ms == null ? null : Math.ceil((ms - Date.now()) / 864e5);
+export const weekKey = (d = new Date()) => { const x = new Date(d); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return dkey(x); }; // lunes de la semana
+export const isAdminEmail = e => FORJA.adminEmails.map(normEmail).includes(normEmail(e));
+/** Abre WhatsApp con el soporte de FORJA (o deja elegir el contacto si no hay número configurado) */
+export const soporteUrl = text => "https://wa.me/" + String(FORJA.soporteWhatsApp || "").replace(/\D/g, "") + "?text=" + encodeURIComponent(text);
 
 /* ---------- sesión ---------- */
 export function waitUser() {
@@ -69,7 +101,8 @@ export async function createGymFor(user, { name, gymName, sede }) {
   b.set(doc(db, "gimnasios", gid), {
     owner: user.uid, name: gymName.trim(), sede: (sede || "").trim(), color: "#2143F0",
     welcome: `Bienvenido a ${gymName.trim()}. Aquí se entrena en serio.`, code: makeCode(),
-    plans: DEF_PLANS, methods: DEF_METHODS, created: serverTimestamp()
+    plans: DEF_PLANS, methods: DEF_METHODS, created: serverTimestamp(),
+    sus: { plan: "prueba", hasta: Timestamp.fromMillis(Date.now() + PRUEBA_DIAS * 864e5) }
   });
   b.set(doc(db, "usuarios", user.uid), { rol: "dueno", gymId: gid, n: name.trim(), email: normEmail(user.email), created: serverTimestamp() });
   await b.commit();
