@@ -17,6 +17,9 @@ service cloud.firestore {
     function myEmail() { return request.auth.token.email; }
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
     function gymDoc(g) { return /databases/$(database)/documents/gimnasios/$(g); }
+    // Dueño de la plataforma FORJA: puede ver todos los gimnasios y cambiar su plan.
+    // Si cambias este correo, cámbialo también en js/forja-config.js
+    function isAdmin() { return signedIn() && request.auth.token.email in ['joseonates@gmail.com']; }
 
     // ---------- Perfiles de usuario ----------
     match /usuarios/{uid} {
@@ -43,12 +46,18 @@ service cloud.firestore {
     match /gimnasios/{g} {
       // Nombre, color, planes y código son públicos para usuarios con sesión (para unirse con el código)
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.owner == request.auth.uid;
-      allow update: if isOwner(g) && request.resource.data.owner == resource.data.owner;
+      // Todo gimnasio nuevo empieza con la prueba gratis de 60 días
+      allow create: if signedIn() && request.resource.data.owner == request.auth.uid
+        && request.resource.data.sus.plan == 'prueba'
+        && request.resource.data.sus.hasta < request.time + duration.value(61, 'd');
+      // El dueño edita su gimnasio, pero nunca su propio plan (sus); solo FORJA cambia el plan
+      allow update: if (isOwner(g) && request.resource.data.owner == resource.data.owner
+                        && request.resource.data.get('sus', null) == resource.data.get('sus', null))
+                    || (isAdmin() && changed().hasOnly(['sus']));
       allow delete: if false;
 
       match /miembros/{m} {
-        allow read: if isStaff(g)
+        allow read: if isStaff(g) || isAdmin()
           || isMemberSelf(g, m)
           || (signedIn() && resource.data.email == myEmail());   // para vincular la cuenta la primera vez
         allow create: if isFront(g) && request.resource.data.uid == null;
@@ -77,7 +86,7 @@ service cloud.firestore {
       }
 
       match /asistencias/{a} {
-        allow read: if isStaff(g) || (inGym(g) && resource.data.m == me().get('memberId', ''));
+        allow read: if isStaff(g) || isAdmin() || (inGym(g) && resource.data.m == me().get('memberId', ''));
         // Equipo: registro manual. Miembro: solo con el código QR vigente del día, una vez por día.
         allow create: if isStaff(g)
           || (isMemberSelf(g, request.resource.data.m)
@@ -87,6 +96,13 @@ service cloud.firestore {
               && request.resource.data.k == get(/databases/$(database)/documents/gimnasios/$(g)/privado/qr).data.k);
         allow update: if false;
         allow delete: if isStaff(g);
+      }
+
+      // Métricas semanales del piloto (mensajes enviados). Id = lunes de la semana
+      match /metricas/{w} {
+        allow read: if isStaff(g) || isAdmin();
+        allow create, update: if isStaff(g);
+        allow delete: if false;
       }
 
       // Código QR del día: solo lo ve el equipo

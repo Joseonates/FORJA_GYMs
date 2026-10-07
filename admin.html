@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D1730">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/icon-192.png">
+<title>Administración · FORJA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Vista del dueño de la plataforma: todos los gimnasios, su plan y las métricas semanales del piloto. */
+:root{
+  --bg:#EDF0F7; --surface:#FFFFFF; --surface-2:#F5F7FC; --ink:#0D1730; --muted:#5A6580; --line:#D6DCE9;
+  --accent:#2143F0; --accent-ink:#FFFFFF; --accent-soft:#E2E7FE; --hi:#FFD23F; --hi-ink:#231A00;
+  --good:#0E8A5B; --good-bg:#DDF4EA; --warn:#A86200; --warn-bg:#FFF0D6; --bad:#C23B22; --bad-bg:#FDE3DD;
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --shadow:0 1px 0 rgba(13,23,48,.04),0 8px 24px -12px rgba(13,23,48,.18);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#080E1D; --surface:#111A2F; --surface-2:#0D152A; --ink:#EEF2FF; --muted:#94A1C0; --line:#243050;
+  --accent:#6680FF; --accent-ink:#06102E; --accent-soft:#1B2650;
+  --good:#3DD39A; --good-bg:#0F3326; --warn:#FFB547; --warn-bg:#3A2A0C; --bad:#FF7A61; --bad-bg:#3D1A14;
+  --shadow:0 1px 0 rgba(0,0,0,.2),0 10px 30px -14px rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#080E1D; --surface:#111A2F; --surface-2:#0D152A; --ink:#EEF2FF; --muted:#94A1C0; --line:#243050;
+  --accent:#6680FF; --accent-ink:#06102E; --accent-soft:#1B2650;
+  --good:#3DD39A; --good-bg:#0F3326; --warn:#FFB547; --warn-bg:#3A2A0C; --bad:#FF7A61; --bad-bg:#3D1A14;
+  --shadow:0 1px 0 rgba(0,0,0,.2),0 10px 30px -14px rgba(0,0,0,.6); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+h1,h2,h3{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.01em;line-height:.95;margin:0}
+h1{font-size:clamp(38px,6vw,54px);font-weight:900}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px;display:grid;gap:16px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:38px;height:38px;border-radius:10px;background:var(--accent);color:#fff;display:grid;place-items:center;font-family:var(--f-display);font-weight:900;font-size:24px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow);min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:760px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:2px}
+.kpi b{font-family:var(--f-display);font-weight:900;font-size:clamp(30px,5vw,44px);line-height:1}
+.kpi .d{font-size:12px;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:11px;padding:10px 15px;font-weight:700;background:var(--accent);color:var(--accent-ink);font-size:14px;text-decoration:none;white-space:nowrap}
+.btn.ghost{background:var(--surface-2);color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:9px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;min-width:940px;font-size:14px}
+th{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td small{display:block;color:var(--muted);font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;background:var(--surface-2);color:var(--muted)}
+.pill.pro{background:var(--accent-soft);color:var(--accent)}
+.pill.gimnasio{background:var(--good-bg);color:var(--good)}
+.pill.prueba{background:var(--warn-bg);color:var(--warn)}
+.pill.vencido{background:var(--bad-bg);color:var(--bad)}
+.sig{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px;white-space:nowrap}
+.sig i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.sig.ok i{background:var(--good)} .sig.mid i{background:var(--warn)} .sig.no i{background:var(--bad)}
+.delta{font-size:12px;color:var(--muted)}
+.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.scrim{position:fixed;inset:0;background:rgba(5,10,25,.55);z-index:70;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:760px){.scrim{align-items:center;padding:24px}}
+.sheet{background:var(--surface);width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:20px 18px;display:grid;gap:12px}
+@media(min-width:760px){.sheet{border-radius:20px}}
+.sheet h2{font-size:32px;font-weight:900}
+label{display:grid;gap:4px;font-weight:600;font-size:14px}
+.inp{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:95;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><div class="logo">F</div><div><b style="font-family:var(--f-display);font-size:22px;letter-spacing:.04em">FORJA</b><div class="eyebrow">Administración de la plataforma</div></div></div>
+    <div class="chips"><a class="btn ghost sm" href="panel.html">Ir a mi panel</a><button class="btn ghost sm" id="out">Cerrar sesión</button></div>
+  </header>
+  <div id="view"><div class="empty">Cargando gimnasios…</div></div>
+</div>
+<div id="modalRoot"></div>
+
+<script type="module">
+import * as F from "./js/fb.js";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const money = n => "$" + Math.round(n).toLocaleString("es-CO");
+const fdate = ms => ms ? new Date(ms).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" }) : "—";
+const toast = m => { const t = document.createElement("div"); t.className = "toast"; t.textContent = m; document.body.append(t); setTimeout(() => t.remove(), 2400); };
+const copy = (text, msg) => { const ok = () => toast(msg || "Copiado"); try { navigator.clipboard.writeText(text).then(ok, fb); } catch (e) { fb(); } function fb() { const ta = document.createElement("textarea"); ta.value = text; document.body.append(ta); ta.select(); try { document.execCommand("copy"); ok(); } catch (e) { toast("No se pudo copiar"); } ta.remove(); } };
+const addD = (k, n) => F.dkey(new Date(new Date(k + "T12:00").getTime() + n * 864e5));
+const PLAN_N = { prueba: "Prueba Pro", gratis: "Gratis", gimnasio: "Gimnasio", pro: "Pro" };
+
+$("#out").onclick = () => F.logout();
+let G = [];
+
+async function start() {
+  if (!F.configured) return location.replace("index.html");
+  const u = await F.waitUser();
+  if (!u) return location.replace("index.html");
+  if (!F.isAdminEmail(u.email)) { $("#view").innerHTML = `<div class="empty">Esta página es solo para la administración de FORJA.</div>`; setTimeout(() => location.replace("panel.html"), 1800); return; }
+  await load();
+}
+
+async function load() {
+  const { collection, getDocs, query, where, doc } = F.fs, db = F.db;
+  const today = F.today(), wk = F.weekKey(), wkPrev = addD(wk, -7), since = addD(wk, -7);
+  const gs = await getDocs(collection(db, "gimnasios"));
+  G = await Promise.all(gs.docs.map(async d => {
+    const g = { id: d.id, ...d.data() };
+    const [ms, as, mt] = await Promise.all([
+      getDocs(collection(db, "gimnasios", g.id, "miembros")),
+      getDocs(query(collection(db, "gimnasios", g.id, "asistencias"), where("d", ">=", since))),
+      getDocs(collection(db, "gimnasios", g.id, "metricas")).catch(() => ({ docs: [] }))
+    ]);
+    const mem = ms.docs.map(x => x.data());
+    const att = as.docs.map(x => x.data());
+    const met = Object.fromEntries(mt.docs.map(x => [x.id, x.data()]));
+    const msgs = w => { const m = met[w] || {}; return Object.keys(m).filter(k => k.startsWith("msg_")).reduce((a, k) => a + (m[k] || 0), 0); };
+    const thisW = att.filter(a => a.d >= wk), prevW = att.filter(a => a.d >= wkPrev && a.d < wk);
+    const vig = mem.filter(m => m.exp && m.exp >= today).length;
+    return {
+      ...g, tier: F.tierOf(g),
+      members: mem.length, vigentes: vig, conApp: mem.filter(m => m.uid).length,
+      entW: thisW.length, entP: prevW.length, qrW: thisW.filter(a => a.via === "qr").length, hoy: att.filter(a => a.d === today).length,
+      msgW: msgs(wk), msgP: msgs(wkPrev), metW: met[wk] || {}
+    };
+  }));
+  G.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  render();
+}
+
+function signal(g) {
+  const appPct = g.members ? g.conApp / g.members : 0;
+  if (g.entW === 0 && g.entP === 0) return ["no", "Sin uso"];
+  if (g.entW > 0 && appPct >= 1 / 3) return ["ok", "Va bien"];
+  return ["mid", "Revisar"];
+}
+function planCell(g) {
+  const t = g.tier, s = g.sus || {}, dl = F.daysLeft(t.hasta);
+  if (t.trial) return `<span class="pill prueba">Prueba Pro</span><small>${dl > 0 ? "quedan " + dl + " días" : "termina hoy"}</small>`;
+  if (t.expired) return `<span class="pill vencido">Gratis</span><small>${t.expired === "prueba" ? "prueba terminada" : PLAN_N[t.expired] + " vencido " + fdate(t.hasta)}</small>`;
+  if (t.id === "gratis") return `<span class="pill">Gratis</span>`;
+  return `<span class="pill ${t.id}">${PLAN_N[t.id]}</span><small>${t.grace ? "venció " : "hasta "}${fdate(t.hasta)}${s.fundador ? " · fundador" : ""}</small>`;
+}
+const arrow = (a, b) => b === 0 ? "" : (a >= b ? "▲ " : "▼ ") + Math.round(Math.abs(a - b) / b * 100) + "% vs. semana pasada";
+
+function render() {
+  const paid = G.filter(g => !g.tier.trial && ["gimnasio", "pro"].includes(g.tier.id));
+  const mrr = paid.reduce((a, g) => a + F.TIERS[g.tier.id].price * (g.sus?.fundador ? 0.5 : 1), 0);
+  const trials = G.filter(g => g.tier.trial).length;
+  const usersApp = G.reduce((a, g) => a + g.conApp, 0);
+  $("#view").innerHTML = `
+  <div style="display:grid;gap:4px;margin-bottom:6px"><span class="eyebrow">Semana del ${new Date(F.weekKey() + "T12:00").toLocaleDateString("es-CO", { day: "numeric", month: "long" })}</span><h1>Gimnasios en FORJA</h1></div>
+  <div class="kpis" style="margin-bottom:16px">
+    <div class="kpi"><span class="eyebrow">Gimnasios</span><b class="num">${G.length}</b><span class="d">${trials} en prueba gratis</span></div>
+    <div class="kpi"><span class="eyebrow">Pagando</span><b class="num">${paid.length}</b><span class="d">plan Gimnasio o Pro</span></div>
+    <div class="kpi"><span class="eyebrow">Ingreso mensual</span><b class="num" style="font-size:clamp(24px,3.4vw,34px)">${money(mrr)}</b><span class="d">según planes activos</span></div>
+    <div class="kpi"><span class="eyebrow">Miembros con app</span><b class="num">${usersApp}</b><span class="d">cuentas creadas en total</span></div>
+  </div>
+  <div class="card" style="margin-bottom:16px"><div class="chips" style="justify-content:space-between"><div><b>Revisión semanal del piloto</b><div class="muted" style="font-size:13px">Entradas registradas, miembros que crearon su cuenta y mensajes de recuperación enviados, por gimnasio.</div></div><button class="btn sm" id="cpWeek">Copiar resumen de la semana</button></div></div>
+  ${G.length ? `<div class="tablewrap"><table><thead><tr><th>Gimnasio</th><th>Plan</th><th>Miembros</th><th>Crearon cuenta</th><th>Entradas semana</th><th>Mensajes semana</th><th>Señal</th><th></th></tr></thead><tbody>
+  ${G.map(g => { const [sc, sl] = signal(g), pct = g.members ? Math.round(g.conApp / g.members * 100) : 0; return `<tr>
+    <td><b>${esc(g.name || "Sin nombre")}</b><small>${esc(g.sede || "")}${g.sede ? " · " : ""}código <span class="num">${esc(g.code || "")}</span></small></td>
+    <td>${planCell(g)}</td>
+    <td class="num">${g.members}<small>${g.vigentes} con plan vigente</small></td>
+    <td class="num">${g.conApp}<small>${pct}% de los miembros</small></td>
+    <td class="num">${g.entW}<small>${g.qrW} con QR · hoy ${g.hoy}</small><span class="delta">${arrow(g.entW, g.entP)}</span></td>
+    <td class="num">${g.msgW}<small>${g.metW.msg_riesgo || 0} recuperar · ${g.metW.msg_vence || 0} cobro · ${g.metW.msg_bienvenida || 0} bienvenida</small></td>
+    <td><span class="sig ${sc}"><i></i>${sl}</span></td>
+    <td><button class="btn sm ghost" data-plan="${g.id}">Cambiar plan</button></td></tr>`; }).join("")}
+  </tbody></table></div>` : `<div class="empty">Aún no hay gimnasios registrados.</div>`}
+  <p class="muted" style="font-size:13px;margin:12px 0 0">"Va bien": tuvo entradas esta semana y al menos un tercio de sus miembros creó la cuenta. "Sin uso": ninguna entrada en dos semanas. La semana empieza el lunes.</p>`;
+  $("#view").onclick = e => { const b = e.target.closest("[data-plan]"); if (b) editPlan(G.find(g => g.id === b.dataset.plan)); };
+  const cw = $("#cpWeek"); if (cw) cw.onclick = () => copy(weekText(), "Resumen copiado");
+}
+
+function weekText() {
+  const lines = G.map(g => `• ${g.name}: ${g.entW} entradas (${g.qrW} con QR), ${g.conApp}/${g.members} miembros con cuenta, ${g.msgW} mensajes · ${signal(g)[1]}`);
+  return `FORJA · semana del ${F.weekKey()}\n${lines.join("\n")}`;
+}
+
+function editPlan(g) {
+  const s = g.sus || {}, cur = s.plan || "prueba", hastaMs = F.toMs(s.hasta);
+  const defHasta = p => p === "prueba" ? addD(F.today(), 60) : p === "gratis" ? "" : addD(F.today(), 30);
+  const r = $("#modalRoot");
+  r.innerHTML = `<div class="scrim" role="dialog" aria-modal="true"><form class="sheet" id="pf">
+    <div><div class="eyebrow">${esc(g.sede || "")}</div><h2>${esc(g.name)}</h2></div>
+    <label>Plan<select class="inp" id="pp">${Object.entries(PLAN_N).map(([k, n]) => `<option value="${k}" ${k === cur ? "selected" : ""}>${n}${F.TIERS[k] ? " · " + money(F.TIERS[k].price) + "/mes" : ""}</option>`).join("")}</select></label>
+    <label id="hl">Activo hasta<input class="inp" type="date" id="ph" value="${hastaMs ? F.dkey(hastaMs) : defHasta(cur)}"></label>
+    <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="pfu" ${s.fundador ? "checked" : ""}> Precio fundador (50% durante 12 meses)</label>
+    <p class="muted" style="margin:0;font-size:13px">Al recibir un pago, elige el plan y pon la fecha hasta la que quedó pagado (un mes o un año). Si vence, el gimnasio tiene 5 días de gracia y luego pasa a Gratis.</p>
+    <div class="chips"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" id="pc">Cancelar</button>${g.tier.hasta && F.daysLeft(g.tier.hasta) <= 7 ? `<button class="btn ghost" type="button" id="prem">Copiar recordatorio de pago</button>` : ""}</div>
+  </form></div>`;
+  const close = () => r.innerHTML = "";
+  const sel = $("#pp"), hl = $("#hl"), ph = $("#ph");
+  const sync = () => { hl.hidden = sel.value === "gratis"; };
+  sel.onchange = () => { ph.value = defHasta(sel.value); sync(); }; sync();
+  $("#pc").onclick = close; r.firstChild.addEventListener("click", e => { if (e.target === r.firstChild) close(); });
+  const rem = $("#prem"); if (rem) rem.onclick = () => copy(`Hola 👋 Te escribo de FORJA. El plan ${PLAN_N[g.tier.id] || "Pro"} de ${g.name} vence el ${fdate(g.tier.hasta)}. ¿Te envío el enlace de pago para renovarlo? Así no pierdes los mensajes, retos ni la pantalla de recepción.`, "Recordatorio copiado");
+  $("#pf").onsubmit = async ev => {
+    ev.preventDefault();
+    const plan = sel.value, sus = { plan, fundador: $("#pfu").checked };
+    if (plan !== "gratis") { if (!ph.value) return toast("Elige la fecha"); sus.hasta = F.fs.Timestamp.fromMillis(new Date(ph.value + "T23:59:00").getTime()); }
+    try { await F.fs.updateDoc(F.fs.doc(F.db, "gimnasios", g.id), { sus }); close(); toast("Plan actualizado"); await load(); }
+    catch (e) { console.error(e); toast(e && e.code === "permission-denied" ? "Sin permiso: publica las reglas nuevas de Firestore" : "No se pudo guardar"); }
+  };
+}
+
+start();
+</script>
+</body>
+</html>

@@ -217,6 +217,13 @@ tbody tr:last-child td{border-bottom:0}
 @media(max-width:999px){.side .foot{display:none!important}}
 .li .num{white-space:nowrap}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.planban{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--hi);color:var(--hi-ink);border-radius:14px;padding:12px 16px;margin-bottom:14px;font-size:14px}
+.ptable th small{display:block;font-weight:500;color:var(--muted);font-size:12px;text-transform:none;letter-spacing:0}
+.ptable td:not(:first-child),.ptable th:not(:first-child){text-align:center}
+.ptable .cur{background:var(--accent-soft,rgba(33,67,240,.08))}
+.adminlink{display:none;color:inherit;font-size:13px;font-weight:700;opacity:.85;padding:6px 0 0}
+@media(max-width:999px){.adminlink{display:block}}
+@media(max-width:600px){.ptable{min-width:0!important;font-size:13px}.ptable td,.ptable th{padding:8px 5px}.ptable .btn{white-space:normal;padding:6px 7px;font-size:12px;line-height:1.2}}
 </style>
 </head>
 <body>
@@ -270,13 +277,13 @@ function copy(text,msg){const ok=()=>toast(msg||'Copiado. Pégalo en WhatsApp');
   function fb(){const ta=document.createElement('textarea');ta.value=text;document.body.append(ta);ta.select();try{document.execCommand('copy');ok()}catch(e){toast('Selecciona el texto y cópialo')}ta.remove()}}
 
 /* ===================== DATOS (Firestore) ===================== */
-let D={ready:false,v:2,plans:[],methods:[],brand:{name:'',sede:'',color:'#2143F0',welcome:''},code:'',owner:'',members:[],pays:[],customProgs:[],retos:[],team:[]};
+let D={ready:false,v:2,plans:[],methods:[],brand:{name:'',sede:'',color:'#2143F0',welcome:''},code:'',owner:'',sus:null,created:null,members:[],pays:[],customProgs:[],retos:[],team:[]};
 let SYNC=null, QR_K='', VIS={};
 const SK={m:{},v:{},p:{},c:{},r:{},gym:''};
 const clean=o=>JSON.parse(JSON.stringify(o));
 const memberCore=m=>{const {visits,...r}=m;return JSON.stringify(r)};
 const gymCore=()=>JSON.stringify({name:D.brand.name,sede:D.brand.sede||'',color:D.brand.color,welcome:D.brand.welcome||'',plans:D.plans,methods:D.methods});
-const ROLE_SEC={dueno:['resumen','miembros','asistencia','membresias','programas','entrenadores','marca'],recepcion:['resumen','miembros','asistencia','membresias','programas'],entrenador:['miembros','asistencia','programas']};
+const ROLE_SEC={dueno:['resumen','miembros','asistencia','membresias','programas','entrenadores','marca','plan'],recepcion:['resumen','miembros','asistencia','membresias','programas'],entrenador:['miembros','asistencia','programas']};
 const allowedSec=k=>!!SYNC&&ROLE_SEC[SYNC.rol].includes(k);
 const isOwnerRole=()=>!!SYNC&&SYNC.rol==='dueno';
 const isFrontRole=()=>!!SYNC&&(SYNC.rol==='dueno'||SYNC.rol==='recepcion');
@@ -320,11 +327,12 @@ async function boot(){
   SYNC={F,gid,uid:user.uid,rol:profile.rol,name:profile.n||'',email:profile.email||''};
   if(!allowedSec(sec)) sec=ROLE_SEC[SYNC.rol][0];
   $('#whoami').textContent=(SYNC.name||SYNC.email)+' · '+ROLE_NAME[SYNC.rol];
+  if(F.isAdminEmail(SYNC.email)){ const a=document.createElement('a'); a.href='admin.html'; a.textContent='Administración FORJA →'; a.style.fontWeight='700'; $('.side .foot').append(a); const b=document.createElement('a'); b.href='admin.html'; b.className='adminlink'; b.textContent='Admin FORJA'; $('#nav').after(b); }
   const {doc,collection,query,where,onSnapshot}=F.fs, col=(...p)=>collection(F.db,'gimnasios',gid,...p);
   const need=['gym','miembros','asistencias','programas','retos','equipo'].concat(isFrontRole()?['pagos']:[]), got=new Set();
   const ready=k=>{ got.add(k); if(!D.ready&&need.every(x=>got.has(x))) D.ready=true; scheduleRender(); };
   const bad=e=>{ fail(e); };
-  onSnapshot(doc(F.db,'gimnasios',gid),sn=>{ const x=sn.data()||{}; D.brand={name:x.name||'Mi gimnasio',sede:x.sede||'',color:x.color||'#2143F0',welcome:x.welcome||''}; D.plans=x.plans||[]; D.methods=x.methods||[]; D.code=x.code||''; D.owner=x.owner||''; syncPlans(); SK.gym=gymCore(); buildTrainers(); ready('gym'); },bad);
+  onSnapshot(doc(F.db,'gimnasios',gid),sn=>{ const x=sn.data()||{}; D.brand={name:x.name||'Mi gimnasio',sede:x.sede||'',color:x.color||'#2143F0',welcome:x.welcome||''}; D.plans=x.plans||[]; D.methods=x.methods||[]; D.code=x.code||''; D.owner=x.owner||''; D.sus=x.sus||null; D.created=x.created||null; syncPlans(); SK.gym=gymCore(); buildTrainers(); ready('gym'); },bad);
   onSnapshot(col('miembros'),qs=>{ D.members=mergeById(D.members,qs.docs); attachVisits(); SK.m={}; D.members.forEach(m=>SK.m[m.id]=memberCore(m)); ready('miembros'); },bad);
   onSnapshot(query(col('asistencias'),where('d','>=',dkey(dayAt(120)))),qs=>{ VIS={}; SK.v={}; qs.docs.forEach(d=>{ const v={id:d.id,...d.data()}; (VIS[v.m]=VIS[v.m]||[]).push(v); SK.v[d.id]=1; }); attachVisits(); ready('asistencias'); },bad);
   if(isFrontRole()) onSnapshot(query(col('pagos'),where('d','>=',dkey(dayAt(400)))),qs=>{ D.pays=qs.docs.map(d=>({id:d.id,...d.data()})); D.pays.forEach(p=>SK.p[p.id]=1); ready('pagos'); },bad);
@@ -356,6 +364,58 @@ const trainer=id=>TRAINERS.find(t=>t.id===id)||{id:'',n:'Sin asignar',sp:'',c:'#
 function progName(id){ if(!id) return 'Sin programa'; const p=PROGS.find(x=>x[0]===id); if(p) return p[1]; const c=D.customProgs.find(x=>x.id===id); return c?c.n:'Sin programa' }
 const firstName=m=>m.n.split(' ')[0];
 
+/* ===================== PLAN FORJA (suscripción del gimnasio) ===================== */
+const TIER_INFO={gratis:{n:'Gratis',price:0,max:30},gimnasio:{n:'Gimnasio',price:79000,max:200},pro:{n:'Pro',price:149000,max:Infinity}};
+const FEAT_NAME={wa:'Mensajes de WhatsApp para recuperar y cobrar',retos:'Retos del gimnasio',kiosk:'Pantalla de recepción',progs:'Programas propios del gimnasio',miembros:'Más miembros'};
+const tier=()=>SYNC?SYNC.F.tierOf({sus:D.sus,created:D.created}):{id:'pro'};
+const tierInfo=()=>SYNC?SYNC.F.TIERS[tier().id]:TIER_INFO.pro;
+const can=f=>!SYNC||SYNC.F.tierAllows(tier(),f);
+const needTier=f=>SYNC?SYNC.F.FEAT_TIER[f]:'gimnasio';
+/* Cuenta para el límite: miembros vigentes. Los visitantes de pase diario dejan de contar si no vienen en 30 días */
+const countsForLimit=m=>status(m)!=='vencido'&&!(isDaily(m)&&daysSince(m)>30&&ago(m.joined)>30);
+const activeCount=()=>D.members.filter(countsForLimit).length;
+const atLimit=()=>activeCount()>=tierInfo().max;
+function upgradeMsg(target){ return `Hola, soy ${SYNC?.name||'el dueño'} de ${D.brand.name}${D.brand.sede?' ('+D.brand.sede+')':''}. Quiero el plan ${TIER_INFO[target].n} de FORJA. Código del gimnasio: ${D.code}.` }
+function openUpgrade(f){
+  const target=f==='miembros'?(tier().id==='gratis'?'gimnasio':'pro'):needTier(f), info=TIER_INFO[target];
+  const owner=isOwnerRole();
+  modal(`<div class="sheet-h"><div><div class="eyebrow">Plan ${info.n} · ${money(info.price)} al mes</div><h2>${esc(FEAT_NAME[f]||'Mejora tu plan')}</h2></div>${X}</div>
+   <p style="margin:0 0 12px">${f==='miembros'?`Tu plan ${esc(tierInfo().n)} permite hasta <b>${tierInfo().max}</b> miembros con plan vigente y ya tienes <b>${activeCount()}</b>. Con el plan ${info.n} puedes registrar ${info.max===Infinity?'miembros ilimitados':'hasta '+info.max}.`:`Esta función está incluida desde el plan <b>${info.n}</b>.`}</p>
+   ${owner?`<div class="chips"><a class="btn" target="_blank" rel="noopener" href="${SYNC.F.soporteUrl(upgradeMsg(target))}">Quiero el plan ${info.n}</a><button class="btn ghost" data-go-plan>Ver planes</button></div>`
+   :`<p class="muted" style="margin:0">Pídele al dueño del gimnasio que active el plan ${info.n} en <b>Mi plan FORJA</b>.</p>`}`,
+  sc=>{ const g=sc.querySelector('[data-go-plan]'); if(g) g.onclick=()=>{ closeModal(); sec='plan'; render(); window.scrollTo({top:0}) } });
+}
+/* Mensajes enviados por semana (para medir el piloto) */
+function track(kind){ if(!SYNC) return; const {F,gid}=SYNC, wk=F.weekKey(); F.fs.setDoc(F.fs.doc(F.db,'gimnasios',gid,'metricas',wk),{semana:wk,[kind]:F.fs.increment(1)},{merge:true}).catch(e=>console.warn(e)); }
+function planBanner(){
+  if(!SYNC||!isFrontRole()) return '';
+  const t=tier(), dl=SYNC.F.daysLeft(t.hasta), max=tierInfo().max, n=activeCount();
+  let txt='', cta=isOwnerRole()?'<button class="btn sm" data-go="plan">Ver planes</button>':'';
+  if(t.trial&&dl<=10) txt=`Tu prueba gratis de FORJA Pro termina en <b>${dl} ${dl===1?'día':'días'}</b>. Después el gimnasio pasa al plan Gratis (hasta 30 miembros con plan vigente).`;
+  else if(t.expired) txt=`Tu ${t.expired==='prueba'?'prueba gratis':'plan '+esc(TIER_INFO[t.expired]?.n||'')} terminó. Ahora estás en el plan <b>Gratis</b>: hasta 30 miembros con plan vigente y sin mensajes, retos ni pantalla de recepción.`;
+  else if(t.grace) txt=`Tu plan ${esc(tierInfo().n)} venció. Renuévalo en los próximos días para no perder funciones.`;
+  else if(max!==Infinity&&n>=max*0.8) txt=`Tienes <b>${n} de ${max}</b> miembros con plan vigente permitidos en tu plan ${esc(tierInfo().n)}.`;
+  return txt?`<div class="planban"><span>${txt}</span>${cta}</div>`:'';
+}
+function vPlan(){
+  const t=tier(), info=tierInfo(), n=activeCount(), dl=SYNC?SYNC.F.daysLeft(t.hasta):null;
+  const stTxt=t.trial?`Prueba gratis de Pro · ${dl>0?'termina en '+dl+(dl===1?' día':' días')+' ('+new Date(t.hasta).toLocaleDateString('es-CO',{day:'numeric',month:'long'})+')':'termina hoy'}`
+    :t.expired?`Tu ${t.expired==='prueba'?'prueba gratis':'plan anterior'} terminó`
+    :t.hasta?`${t.grace?'Venció el':'Pagado hasta el'} ${new Date(t.hasta).toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'})}${t.fundador?' · precio fundador':''}`:'Sin fecha de vencimiento';
+  const rows=[['Panel, cobros y asistencia con QR','✓','✓','✓'],['App de miembros con programas y ranking','✓','✓','✓'],['Miembros con plan vigente','Hasta 30','Hasta 200','Ilimitados'],['Mensajes de WhatsApp (recuperar y cobrar)','—','✓','✓'],['Retos del gimnasio','—','✓','✓'],['Pantalla de recepción','—','✓','✓'],['Programas propios del gimnasio','—','—','✓'],['Soporte prioritario','—','—','✓']];
+  const col=k=>t.id===k?' class="cur"':'';
+  $('#view').innerHTML=`${head('Mi plan FORJA','suscripción del gimnasio')}
+  <div class="g2 g21">
+   <div class="card grid" style="gap:10px"><span class="eyebrow">Plan actual</span><h2 style="font-size:44px;margin:0">${esc(info.n)}${t.trial?' <span class="tag">Prueba</span>':''}</h2><span class="muted">${stTxt}</span>
+     <div style="margin-top:6px"><div style="display:flex;justify-content:space-between;font-size:13px"><span>Miembros con plan vigente</span><b class="num">${n}${info.max===Infinity?'':' / '+info.max}</b></div>${info.max===Infinity?'':`<div class="bar" style="margin-top:6px"><i style="width:${Math.min(100,n/info.max*100)}%"></i></div>`}</div>
+     <p class="muted" style="font-size:13px;margin:6px 0 0">Los miembros vencidos no cuentan. Los visitantes de pase diario dejan de contar si no vuelven en 30 días.</p></div>
+   <div class="card grid" style="gap:10px"><span class="eyebrow">¿Cómo se paga?</span><p style="margin:0;font-size:14px">Escríbenos por WhatsApp con el plan que quieres. Te enviamos el enlace de pago (Nequi, PSE o tarjeta) y activamos el plan el mismo día.</p><p class="muted" style="margin:0;font-size:13px">Pago anual: 10 meses por el precio de 12. Sin permanencia.</p></div>
+  </div>
+  <div class="card"><div class="tablewrap" style="border:0"><table class="ptable" style="min-width:560px"><thead><tr><th></th><th${col('gratis')}>Gratis<small>$0</small></th><th${col('gimnasio')}>Gimnasio<small>${money(79000)} / mes</small></th><th${col('pro')}>Pro<small>${money(149000)} / mes</small></th></tr></thead>
+   <tbody>${rows.map(r=>`<tr style="cursor:default"><td>${r[0]}</td><td${col('gratis')}>${r[1]}</td><td${col('gimnasio')}>${r[2]}</td><td${col('pro')}>${r[3]}</td></tr>`).join('')}</tbody>
+   <tfoot><tr><td></td><td${col('gratis')}></td>${['gimnasio','pro'].map(k=>`<td${col(k)}>${t.id===k&&!t.trial?'<span class="tag">Tu plan</span>':`<a class="btn sm" target="_blank" rel="noopener" href="${SYNC?SYNC.F.soporteUrl(upgradeMsg(k)):'#'}">Quiero ${TIER_INFO[k].n}</a>`}</td>`).join('')}</tr></tfoot></table></div></div>`;
+}
+
 /* ===================== NAVEGACIÓN ===================== */
 const ICO={
  resumen:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
@@ -364,14 +424,15 @@ const ICO={
  membresias:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
  programas:'<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>',
  entrenadores:'<circle cx="12" cy="7" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2M12 11v4"/>',
+ plan:'<path d="M12 2l3 6.5 7 .9-5.1 4.8 1.3 7L12 17.8 5.8 21.2l1.3-7L2 9.4l7-.9z"/>',
  marca:'<circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.5"/><circle cx="12" cy="7.5" r="1.5"/><circle cx="16" cy="10" r="1.5"/><path d="M12 21a3 3 0 0 1 0-6h2"/>'};
-const SECTIONS=[['resumen','Resumen'],['miembros','Miembros'],['asistencia','Asistencia'],['membresias','Membresías'],['programas','Programas y retos'],['entrenadores','Equipo'],['marca','Mi marca']];
+const SECTIONS=[['resumen','Resumen'],['miembros','Miembros'],['asistencia','Asistencia'],['membresias','Membresías'],['programas','Programas y retos'],['entrenadores','Equipo'],['marca','Mi marca'],['plan','Mi plan FORJA']];
 let sec='resumen';
 function nav(){ const risk=D.members.filter(m=>status(m)==='riesgo').length;
   $('#nav').innerHTML=SECTIONS.filter(([k])=>allowedSec(k)).map(([k,l])=>`<button data-sec="${k}" aria-current="${sec===k?'page':'false'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICO[k]}</svg>${l}${k==='miembros'&&risk?`<span class="count">${risk}</span>`:''}</button>`).join('')+`<button class="navapp" data-logout type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Cerrar sesión</button>`;
   const b=D.brand; $('#bName').textContent=b.name.toUpperCase(); $('#bSede').textContent=b.sede; $('#bLogo').textContent=(b.name[0]||'F').toUpperCase(); $('#bLogo').style.background=b.color; }
 $('#nav').onclick=e=>{ if(e.target.closest('[data-logout]')){ SYNC&&SYNC.F.logout(); return } const b=e.target.closest('[data-sec]'); if(b){sec=b.dataset.sec; render(); window.scrollTo({top:0})}};
-function render(){ if(!D.ready){ $('#view').innerHTML='<div class="empty" style="margin-top:40px">Cargando tu gimnasio…</div>'; return } if(!allowedSec(sec)) sec=ROLE_SEC[SYNC.rol][0]; nav(); ({resumen:vResumen,miembros:vMiembros,asistencia:vAsistencia,membresias:vMembresias,programas:vProgramas,entrenadores:vEntrenadores,marca:vMarca})[sec]() }
+function render(){ if(!D.ready){ $('#view').innerHTML='<div class="empty" style="margin-top:40px">Cargando tu gimnasio…</div>'; return } if(!allowedSec(sec)) sec=ROLE_SEC[SYNC.rol][0]; nav(); ({resumen:vResumen,miembros:vMiembros,asistencia:vAsistencia,membresias:vMembresias,programas:vProgramas,entrenadores:vEntrenadores,marca:vMarca,plan:vPlan})[sec]() }
 const demoBar=()=>'';
 const head=(t,sub,right='')=>`<div class="pagehead"><div><div class="eyebrow">${esc(D.brand.name)} · ${sub}</div><h1>${t}</h1></div><div class="chips">${right}</div></div>`;
 
@@ -414,7 +475,7 @@ function vResumen(){
   WD.forEach((w,wi)=>{ heat+=`<span>${w}</span>`+HRS.map(h=>{const v=hm[wi+'-'+h]||0, p=Math.round(v/hmax*100); return `<i class="c" style="background:color-mix(in srgb,var(--accent) ${p}%,var(--surface-2))" data-tip="${w} ${h}:00 · ${v} visitas en 4 semanas"></i>`}).join('') });
   let peak=['',0]; Object.entries(hm).forEach(([k,v])=>{if(v>peak[1])peak=[k,v]}); const [pw,ph]=peak[0]?peak[0].split('-'):[null,null];
   const top5=M.map(m=>({m,v:visitsIn(m,7)})).sort((a,b)=>b.v-a.v).slice(0,5);
-  $('#view').innerHTML=`${M.length?'':onboarding()}${head('Resumen',new Date().toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'}),`<button class="btn hi" data-kiosk>Pantalla de recepción</button>`)}
+  $('#view').innerHTML=`${planBanner()}${M.length?'':onboarding()}${head('Resumen',new Date().toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'}),`<button class="btn hi" data-kiosk>Pantalla de recepción${can('kiosk')?'':' 🔒'}</button>`)}
   <div class="kpis">
     <div class="kpi"><span class="eyebrow">Miembros activos</span><b class="num">${act.length}</b><span class="d">de ${M.length} registrados</span></div>
     <div class="kpi"><span class="eyebrow">Visitas hoy</span><b class="num">${today.length}</b><span class="d">ayer: ${yest.length}</span></div>
@@ -456,10 +517,10 @@ function onboarding(){ return `<div class="card" style="border:2px solid var(--a
 function bindCommon(extra){
   const v=$('#view');
   v.onclick=e=>{ if(extra&&extra(e)) return; const t=e.target.closest('[data-msg],[data-m],[data-go],[data-kiosk]'); if(!t) return;
-    if(t.dataset.msg){ const m=D.members.find(x=>x.id===t.dataset.id); copy(MSG[t.dataset.msg](m),'Mensaje copiado. Pégalo en WhatsApp de '+firstName(m)); return }
+    if(t.dataset.msg){ if(t.dataset.msg!=='bienvenida'&&!can('wa')){ openUpgrade('wa'); return } const m=D.members.find(x=>x.id===t.dataset.id); copy(MSG[t.dataset.msg](m),'Mensaje copiado. Pégalo en WhatsApp de '+firstName(m)); track('msg_'+t.dataset.msg); return }
     if(t.dataset.m){ openMember(t.dataset.m); return }
     if(t.dataset.go){ sec=t.dataset.go; if(t.dataset.f) mf=t.dataset.f; render(); window.scrollTo({top:0}); return }
-    if('kiosk' in t.dataset) openKiosk();
+    if('kiosk' in t.dataset){ if(!can('kiosk')){ openUpgrade('kiosk'); return } openKiosk(); }
   };
 }
 
@@ -520,7 +581,7 @@ function openMember(id){
      ${m.uid?'<span style="font-weight:600;color:var(--good)">✓ Ya creó su cuenta y usa la app</span>':'<span class="muted" style="font-size:13px">Aún no crea su cuenta. Envíale la bienvenida con el código del gimnasio.</span>'}
      <label class="f">Correo para la app<input class="inp" id="mEmail" type="email" value="${esc(m.email||'')}" ${m.uid||!isFrontRole()?'disabled':''} placeholder="correo@ejemplo.com"></label></div>
    <div class="eyebrow" style="margin-bottom:8px">Enviar por WhatsApp</div>
-   <div class="chips"><button class="btn sm wa" data-t="riesgo">Te extrañamos</button><button class="btn sm wa" data-t="vence">Recordar pago</button><button class="btn sm wa" data-t="bienvenida">Bienvenida</button></div>`,
+   <div class="chips"><button class="btn sm wa" data-t="riesgo">Te extrañamos${can('wa')?'':' 🔒'}</button><button class="btn sm wa" data-t="vence">Recordar pago${can('wa')?'':' 🔒'}</button><button class="btn sm wa" data-t="bienvenida">Bienvenida</button></div>`,
   sc=>{ const upd=()=>{ m.prog=sc.querySelector('#mProg').value||null; m.trainer=sc.querySelector('#mTr').value; m.notes=sc.querySelector('#mNotes').value; save(); };
     sc.querySelector('#mProg').onchange=()=>{upd();toast('Programa asignado. '+firstName(m)+' lo verá en su app');render()};
     sc.querySelector('#mTr').onchange=()=>{upd();toast('Entrenador actualizado');render()};
@@ -532,7 +593,7 @@ function openMember(id){
       if(i>=0){ m.visits.splice(i,1); if(isTicket(m)) m.entries=(m.entries||0)+1; toast('Asistencia del '+fdate(k)+' quitada') }
       else { const now=new Date(); m.visits.push({d:k,h:k===TODAY?now.getHours():18,t:k===TODAY?now.getHours()*60+now.getMinutes():undefined}); m.visits.sort((a,b)=>a.d.localeCompare(b.d)); if(isTicket(m)&&m.entries>0) m.entries--; toast('Asistencia del '+fdate(k)+' registrada') }
       save(); render(); openMember(id) });
-    sc.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>copy(MSG[b.dataset.t](m),'Mensaje copiado para '+firstName(m)));
+    sc.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ if(b.dataset.t!=='bienvenida'&&!can('wa')){ openUpgrade('wa'); return } copy(MSG[b.dataset.t](m),'Mensaje copiado para '+firstName(m)); track('msg_'+b.dataset.t); });
     sc.querySelector('#renew')?.addEventListener('click',()=>openCharge(id,{checkin:isDaily(m)&&!m.visits.some(v=>v.d===TODAY),after:()=>openMember(id)}));
   });
 }
@@ -566,6 +627,7 @@ function openCharge(id,opts){
   });
 }
 function addMember(){
+  if(atLimit()){ openUpgrade('miembros'); return }
   modal(`<div class="sheet-h"><h2>Nuevo miembro</h2>${X}</div>
    <form id="fm" class="grid" style="gap:12px">
     <label class="f">Nombre completo<input class="inp" id="nN" required maxlength="40" placeholder="Ej. Laura Restrepo"></label>
@@ -598,7 +660,7 @@ const needsPay=m=>status(m)==='vencido'||(isDaily(m)&&m.exp!==TODAY);
 const hhmm=c=>c.t!=null?String(Math.floor(c.t/60)).padStart(2,'0')+':'+String(c.t%60).padStart(2,'0'):String(c.h).padStart(2,'0')+':00';
 function vAsistencia(){
   const today=checkinsOn(TODAY);
-  $('#view').innerHTML=`${head('Asistencia','hoy · '+fdate(TODAY),`<button class="btn hi" data-kiosk>Pantalla de recepción</button>`)}
+  $('#view').innerHTML=`${head('Asistencia','hoy · '+fdate(TODAY),`<button class="btn hi" data-kiosk>Pantalla de recepción${can('kiosk')?'':' 🔒'}</button>`)}
   <div class="g2 g12">
     <div class="card" style="text-align:center;display:grid;gap:12px;justify-items:center">
       <div class="eyebrow">QR de entrada · se renueva cada día</div>
@@ -626,6 +688,7 @@ function vAsistencia(){
     const m=D.members.find(x=>x.id===b.dataset.ci); checkIn(m); toast('Entrada de '+firstName(m)+' registrada'+(isTicket(m)?(m.entries===1?' · le queda 1 entrada':' · le quedan '+m.entries+' entradas'):'')); vAsistencia() };
 }
 function walkIn(name){
+  if(atLimit()){ openUpgrade('miembros'); return }
   const daily=D.plans.find(p=>p.on&&p.tipo==='tiempo'&&p.days===1);
   if(!daily){ toast('Activa un plan de pase diario en Membresías'); return }
   modal(`<div class="sheet-h"><div><div class="eyebrow">Visitante</div><h2>Pase diario</h2></div>${X}</div>
@@ -736,7 +799,7 @@ function planEditor(id){
 function retoProgress(r,m){ if(r.tipo==='visitas') return m.visits.filter(v=>v.d.slice(0,7)===TODAY.slice(0,7)).length; if(r.tipo==='racha') return streak(m); return 0 }
 function vProgramas(){
   const cnt={}; D.members.forEach(m=>{ if(m.prog) cnt[m.prog]=(cnt[m.prog]||0)+1 });
-  $('#view').innerHTML=`${head('Programas y retos','contenido para tus miembros',`<button class="btn" data-newprog>+ Crear programa</button><button class="btn hi" data-newreto>+ Crear reto</button>`)}
+  $('#view').innerHTML=`${head('Programas y retos','contenido para tus miembros',`<button class="btn" data-newprog>+ Crear programa${can('progs')?'':' 🔒'}</button><button class="btn hi" data-newreto>+ Crear reto${can('retos')?'':' 🔒'}</button>`)}
   <div class="card"><div class="card-h"><h3>Retos del gimnasio</h3><span class="muted" style="font-size:13px">los miembros los ven en su app y compiten</span></div>
     <div class="g2">${D.retos.length?'':'<div class="empty">Aún no hay retos. Crea el primero con “+ Crear reto”: participan todos tus miembros.</div>'}${D.retos.map(r=>{const P=((r.parts&&r.parts.length)?r.parts.map(id=>D.members.find(m=>m.id===id)).filter(Boolean):D.members).map(m=>({m,v:retoProgress(r,m)})).sort((a,b)=>b.v-a.v); const done=P.filter(x=>x.v>=r.meta).length; const left=daysBetween(TODAY,r.fin);
       return `<div class="plan" style="gap:10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><span class="eyebrow">${r.tipo==='visitas'?'Visitas en el mes':r.tipo==='racha'?'Días seguidos':'Reto'} · meta ${r.meta}</span><h3 style="font-size:28px;margin-top:4px">${esc(r.n)}</h3></div><span class="tag">${left>0?'Faltan '+left+' días':'Terminado'}</span></div>
@@ -748,7 +811,7 @@ function vProgramas(){
   <div class="card"><div class="card-h"><h3>Programas FORJA</h3><span class="muted" style="font-size:13px">incluidos en la app</span></div>
     <div class="tablewrap" style="border:0"><table style="min-width:560px"><thead><tr><th>Programa</th><th>Nivel</th><th>Días / semana</th><th>Semanas</th><th>Miembros siguiéndolo</th></tr></thead><tbody>${PROGS.map(p=>`<tr style="cursor:default"><td><b>${p[1]}</b></td><td>${LV[p[2]]}</td><td class="num">${p[3]}</td><td class="num">${p[4]}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:120px"><i style="width:${Math.min(100,(cnt[p[0]]||0)/12*100)}%"></i></div><span class="num">${cnt[p[0]]||0}</span></div></td></tr>`).join('')}</tbody></table></div></div>`;
   $('#view').onclick=e=>{const t=e.target.closest('[data-newprog],[data-newreto],[data-share]'); if(!t) return;
-    if('newprog' in t.dataset) progBuilder(); else if('newreto' in t.dataset) newReto();
+    if('newprog' in t.dataset){ if(!can('progs')){ openUpgrade('progs'); return } progBuilder(); } else if('newreto' in t.dataset){ if(!can('retos')){ openUpgrade('retos'); return } newReto(); }
     else { const r=D.retos.find(x=>x.id===t.dataset.share); copy(`🏆 Reto ${r.n} en ${D.brand.name}\nMeta: ${r.meta} ${r.tipo==='visitas'?'visitas este mes':'días seguidos'}\nPremio: ${r.premio}\nEntra a FORJA (${appUrl()}) y compite con todo el gym 💪 #RetoForja`,'Invitación copiada') } };
 }
 function progBuilder(){
