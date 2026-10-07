@@ -139,7 +139,9 @@ async function load() {
       msgW: msgs(wk), msgP: msgs(wkPrev), metW: met[wk] || {}
     };
   }));
-  G.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  // primero los que se vencen antes; los gratis al final
+  const left = g => g.tier.id === "gratis" && !g.tier.trial ? 1e9 : (F.daysLeft(g.tier.hasta) ?? 1e8);
+  G.sort((a, b) => left(a) - left(b) || (a.name || "").localeCompare(b.name || ""));
   render();
 }
 
@@ -154,7 +156,9 @@ function planCell(g) {
   if (t.trial) return `<span class="pill prueba">Prueba Pro</span><small>${dl > 0 ? "quedan " + dl + " días" : "termina hoy"}</small>`;
   if (t.expired) return `<span class="pill vencido">Gratis</span><small>${t.expired === "prueba" ? "prueba terminada" : PLAN_N[t.expired] + " vencido " + fdate(t.hasta)}</small>`;
   if (t.id === "gratis") return `<span class="pill">Gratis</span>`;
-  return `<span class="pill ${t.id}">${PLAN_N[t.id]}</span><small>${t.grace ? "venció " : "hasta "}${fdate(t.hasta)}${s.fundador ? " · fundador" : ""}</small>`;
+  if (!t.hasta) return `<span class="pill ${t.id}">${PLAN_N[t.id]}</span><small>sin fecha de vencimiento</small>`;
+  const txt = t.grace ? `venció hace ${-dl} ${-dl === 1 ? "día" : "días"} · en gracia` : dl === 0 ? "vence hoy" : `quedan ${dl} ${dl === 1 ? "día" : "días"}`;
+  return `<span class="pill ${t.grace ? "vencido" : t.id}">${PLAN_N[t.id]}</span><small><b style="color:${t.grace || dl <= 5 ? "var(--bad)" : "inherit"}">${txt}</b> · hasta ${fdate(t.hasta)}${s.fundador ? " · fundador" : ""}</small>`;
 }
 const arrow = (a, b) => b === 0 ? "" : (a >= b ? "▲ " : "▼ ") + Math.round(Math.abs(a - b) / b * 100) + "% vs. semana pasada";
 
@@ -163,16 +167,17 @@ function render() {
   const mrr = paid.reduce((a, g) => a + F.TIERS[g.tier.id].price * (g.sus?.fundador ? 0.5 : 1), 0);
   const trials = G.filter(g => g.tier.trial).length;
   const usersApp = G.reduce((a, g) => a + g.conApp, 0);
+  const soon = G.filter(g => g.tier.hasta && !g.tier.expired && F.daysLeft(g.tier.hasta) <= 7);
   $("#view").innerHTML = `
   <div style="display:grid;gap:4px;margin-bottom:6px"><span class="eyebrow">Semana del ${new Date(F.weekKey() + "T12:00").toLocaleDateString("es-CO", { day: "numeric", month: "long" })}</span><h1>Gimnasios en FORJA</h1></div>
   <div class="kpis" style="margin-bottom:16px">
-    <div class="kpi"><span class="eyebrow">Gimnasios</span><b class="num">${G.length}</b><span class="d">${trials} en prueba gratis</span></div>
+    <div class="kpi"><span class="eyebrow">Gimnasios</span><b class="num">${G.length}</b><span class="d">${trials} en prueba gratis · ${usersApp} miembros con app</span></div>
     <div class="kpi"><span class="eyebrow">Pagando</span><b class="num">${paid.length}</b><span class="d">plan Gimnasio o Pro</span></div>
     <div class="kpi"><span class="eyebrow">Ingreso mensual</span><b class="num" style="font-size:clamp(24px,3.4vw,34px)">${money(mrr)}</b><span class="d">según planes activos</span></div>
-    <div class="kpi"><span class="eyebrow">Miembros con app</span><b class="num">${usersApp}</b><span class="d">cuentas creadas en total</span></div>
+    <div class="kpi" style="${soon.length ? "background:var(--bad-bg);border-color:transparent" : ""}"><span class="eyebrow">Vencen en 7 días</span><b class="num" style="${soon.length ? "color:var(--bad)" : ""}">${soon.length}</b><span class="d">pruebas o planes por renovar</span></div>
   </div>
   <div class="card" style="margin-bottom:16px"><div class="chips" style="justify-content:space-between"><div><b>Revisión semanal del piloto</b><div class="muted" style="font-size:13px">Entradas registradas, miembros que crearon su cuenta y mensajes de recuperación enviados, por gimnasio.</div></div><button class="btn sm" id="cpWeek">Copiar resumen de la semana</button></div></div>
-  ${G.length ? `<div class="tablewrap"><table><thead><tr><th>Gimnasio</th><th>Plan</th><th>Miembros</th><th>Crearon cuenta</th><th>Entradas semana</th><th>Mensajes semana</th><th>Señal</th><th></th></tr></thead><tbody>
+  ${G.length ? `<div class="tablewrap"><table><thead><tr><th>Gimnasio</th><th>Plan y días restantes</th><th>Miembros</th><th>Crearon cuenta</th><th>Entradas semana</th><th>Mensajes semana</th><th>Señal</th><th></th></tr></thead><tbody>
   ${G.map(g => { const [sc, sl] = signal(g), pct = g.members ? Math.round(g.conApp / g.members * 100) : 0; return `<tr>
     <td><b>${esc(g.name || "Sin nombre")}</b><small>${esc(g.sede || "")}${g.sede ? " · " : ""}código <span class="num">${esc(g.code || "")}</span></small></td>
     <td>${planCell(g)}</td>
