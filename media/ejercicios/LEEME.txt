@@ -1,0 +1,82 @@
+BIBLIOTECA DE ANIMACIONES 3D DE FORJA
+======================================
+
+Esta carpeta es para los videos 3D de cada ejercicio (los que compres o mandes a hacer).
+Mientras esté vacía, la app muestra las figuras dibujadas de siempre.
+
+CÓMO AGREGAR UN VIDEO
+1. Nombra el archivo con el código del ejercicio de la lista de abajo. Ejemplo: sentadilla.mp4
+   Formatos: .mp4 (recomendado), .webm, .gif o .webp. Sin espacios ni tildes en el nombre.
+2. Súbelo a esta misma carpeta en GitHub (media/ejercicios).
+3. Abre biblioteca.json y agrega una línea por cada video, así:
+
+   {
+     "sentadilla": "sentadilla.mp4",
+     "banca": "banca.mp4"
+   }
+
+   (Comas entre líneas, pero NO después de la última.)
+4. Guarda (Commit changes). En 1 o 2 minutos la app muestra el video 3D en ese ejercicio.
+
+RECOMENDACIONES
+- Video corto en bucle (2 a 6 segundos por repetición), sin sonido.
+- Formato cuadrado o casi cuadrado, máximo 720 px y menos de 3 MB por archivo.
+- Solo usa videos con licencia comercial por escrito.
+
+CÓDIGOS DE LOS EJERCICIOS
+código                | ejercicio
+----------------------+------------------------------------------
+banca                 | Press de banca con barra
+inclinado             | Press inclinado con mancuernas
+aperturas             | Aperturas en polea
+flexiones             | Flexiones
+fondos                | Fondos en paralelas
+press-maquina         | Press de pecho en máquina
+militar               | Press militar con barra
+laterales             | Elevaciones laterales
+arnold                | Press Arnold
+face-pull             | Face pull en polea
+pike                  | Flexión pica
+curl-barra            | Curl con barra
+martillo              | Curl martillo
+curl-polea            | Curl en polea
+chin                  | Dominadas supinas
+triceps-polea         | Extensión de tríceps en polea
+frances               | Press francés
+fondos-banco          | Fondos en banco
+triceps-cabeza        | Extensión sobre la cabeza
+muneca                | Curl de muñeca
+granjero              | Paseo del granjero
+plancha               | Plancha
+crunch                | Crunch abdominal
+elev-piernas          | Elevación de piernas colgado
+giro-ruso             | Giro ruso
+plancha-lateral       | Plancha lateral
+lenador               | Leñador en polea
+encogimientos         | Encogimientos con mancuernas
+remo-menton           | Remo al mentón con banda
+dominadas             | Dominadas
+jalon                 | Jalón al pecho
+remo-barra            | Remo con barra
+remo-mancuerna        | Remo a una mano
+remo-sentado          | Remo sentado en polea
+remo-banda            | Remo con banda
+peso-muerto           | Peso muerto
+hiperext              | Hiperextensiones
+superman              | Superman
+hip-thrust            | Hip thrust con barra
+puente                | Puente de glúteo
+swing                 | Swing con kettlebell
+patada-polea          | Patada de glúteo en polea
+sentadilla            | Sentadilla con barra
+goblet                | Sentadilla goblet
+prensa                | Prensa de piernas
+zancadas              | Zancadas con mancuernas
+bulgara               | Sentadilla búlgara
+extension             | Extensión de cuádriceps
+sentadilla-banda      | Sentadilla con banda
+rumano                | Peso muerto rumano
+curl-femoral          | Curl femoral en máquina
+buenos-dias           | Buenos días con banda
+talones-pie           | Elevación de talones de pie
+talones-sentado       | Elevación de talones sentado

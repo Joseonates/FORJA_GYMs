@@ -9,6 +9,6 @@
 // ============================================================
 
 export const FORJA = {
-  soporteWhatsApp: "",
+  soporteWhatsApp: "573228909446",
   adminEmails: ["joseonates@gmail.com"]
 };

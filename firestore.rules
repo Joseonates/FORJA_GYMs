@@ -123,6 +123,12 @@ service cloud.firestore {
         allow write: if isStaff(g);
       }
 
+      // Videos de los entrenadores por ejercicio (id = ejercicio)
+      match /videos/{v} {
+        allow read: if inGym(g);
+        allow write: if isStaff(g);
+      }
+
       match /retos/{r} {
         allow read: if inGym(g);
         allow write: if isStaff(g);

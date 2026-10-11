@@ -1,6 +1,6 @@
 // FORJA · service worker: funciona sin internet para abrir la app y ver ejercicios.
 // Sube el número de versión cada vez que publiques cambios importantes.
-const CACHE = 'forja-v3';
+const CACHE = 'forja-v6';
 const SHELL = ['./', './index.html', './app.html', './panel.html', './manifest.json',
   './js/fb.js', './js/firebase-config.js', './js/forja-config.js', './js/instalar.js', './js/vendor/html5-qrcode.min.js', './js/vendor/qrcode-generator.js',
   './icons/icon-192.png', './icons/icon-512.png'];

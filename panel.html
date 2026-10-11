@@ -221,6 +221,7 @@ tbody tr:last-child td{border-bottom:0}
 .ptable th small{display:block;font-weight:500;color:var(--muted);font-size:12px;text-transform:none;letter-spacing:0}
 .ptable td:not(:first-child),.ptable th:not(:first-child){text-align:center}
 .ptable .cur{background:var(--accent-soft,rgba(33,67,240,.08))}
+.vform{display:grid;gap:10px}@media(min-width:900px){.vform{grid-template-columns:1.2fr 1.4fr 1fr auto;align-items:end}}
 .adminlink{display:none;color:inherit;font-size:13px;font-weight:700;opacity:.85;padding:6px 0 0}
 @media(max-width:999px){.adminlink{display:block}}
 @media(max-width:600px){.ptable{min-width:0!important;font-size:13px}.ptable td,.ptable th{padding:8px 5px}.ptable .btn{white-space:normal;padding:6px 7px;font-size:12px;line-height:1.2}}
@@ -257,7 +258,7 @@ let TRAINERS=[];
 const TEAM_COLORS=['#E4572E','#17A398','#8E44AD','#D98E04','#2E86DE','#27AE60'];
 const PROGS=[['primeros','Primeros pasos',1,3,4],['casa','En casa sin equipo',1,3,4],['quema','Quema inicial',1,3,6],['torso-pierna','Torso / Pierna',2,4,8],['ppl3','Empuje · Jalón · Pierna',2,3,8],['gluteos','Glúteos y piernas',2,3,6],['ppl6','PPL 6 días',3,6,8],['fuerza','Fuerza 5×5',3,3,12],['calistenia','Calistenia avanzada',3,4,8]];
 const LV=['','Principiante','Intermedio','Avanzado'];
-const EXN=[['sentadilla','Sentadilla con barra'],['goblet','Sentadilla goblet'],['prensa','Prensa de piernas'],['zancadas','Zancadas con mancuernas'],['bulgara','Sentadilla búlgara'],['extension','Extensión de cuádriceps'],['rumano','Peso muerto rumano'],['curl-femoral','Curl femoral en máquina'],['peso-muerto','Peso muerto'],['hip-thrust','Hip thrust con barra'],['puente','Puente de glúteo'],['swing','Swing con kettlebell'],['patada-polea','Patada de glúteo en polea'],['talones-pie','Elevación de talones'],['banca','Press de banca con barra'],['inclinado','Press inclinado con mancuernas'],['press-maquina','Press de pecho en máquina'],['aperturas','Aperturas en polea'],['flexiones','Flexiones'],['fondos','Fondos en paralelas'],['militar','Press militar con barra'],['arnold','Press Arnold'],['laterales','Elevaciones laterales'],['face-pull','Face pull en polea'],['dominadas','Dominadas'],['jalon','Jalón al pecho'],['remo-barra','Remo con barra'],['remo-mancuerna','Remo a una mano'],['remo-sentado','Remo sentado en polea'],['curl-barra','Curl con barra'],['martillo','Curl martillo'],['triceps-polea','Extensión de tríceps en polea'],['frances','Press francés'],['plancha','Plancha'],['crunch','Crunch abdominal'],['elev-piernas','Elevación de piernas colgado'],['giro-ruso','Giro ruso'],['lenador','Leñador en polea']];
+const EXN=[['banca', 'Press de banca con barra'], ['inclinado', 'Press inclinado con mancuernas'], ['aperturas', 'Aperturas en polea'], ['flexiones', 'Flexiones'], ['fondos', 'Fondos en paralelas'], ['press-maquina', 'Press de pecho en máquina'], ['militar', 'Press militar con barra'], ['laterales', 'Elevaciones laterales'], ['arnold', 'Press Arnold'], ['face-pull', 'Face pull en polea'], ['pike', 'Flexión pica'], ['curl-barra', 'Curl con barra'], ['martillo', 'Curl martillo'], ['curl-polea', 'Curl en polea'], ['chin', 'Dominadas supinas'], ['triceps-polea', 'Extensión de tríceps en polea'], ['frances', 'Press francés'], ['fondos-banco', 'Fondos en banco'], ['triceps-cabeza', 'Extensión sobre la cabeza'], ['muneca', 'Curl de muñeca'], ['granjero', 'Paseo del granjero'], ['plancha', 'Plancha'], ['crunch', 'Crunch abdominal'], ['elev-piernas', 'Elevación de piernas colgado'], ['giro-ruso', 'Giro ruso'], ['plancha-lateral', 'Plancha lateral'], ['lenador', 'Leñador en polea'], ['encogimientos', 'Encogimientos con mancuernas'], ['remo-menton', 'Remo al mentón con banda'], ['dominadas', 'Dominadas'], ['jalon', 'Jalón al pecho'], ['remo-barra', 'Remo con barra'], ['remo-mancuerna', 'Remo a una mano'], ['remo-sentado', 'Remo sentado en polea'], ['remo-banda', 'Remo con banda'], ['peso-muerto', 'Peso muerto'], ['hiperext', 'Hiperextensiones'], ['superman', 'Superman'], ['hip-thrust', 'Hip thrust con barra'], ['puente', 'Puente de glúteo'], ['swing', 'Swing con kettlebell'], ['patada-polea', 'Patada de glúteo en polea'], ['sentadilla', 'Sentadilla con barra'], ['goblet', 'Sentadilla goblet'], ['prensa', 'Prensa de piernas'], ['zancadas', 'Zancadas con mancuernas'], ['bulgara', 'Sentadilla búlgara'], ['extension', 'Extensión de cuádriceps'], ['sentadilla-banda', 'Sentadilla con banda'], ['rumano', 'Peso muerto rumano'], ['curl-femoral', 'Curl femoral en máquina'], ['buenos-dias', 'Buenos días con banda'], ['talones-pie', 'Elevación de talones de pie'], ['talones-sentado', 'Elevación de talones sentado']];
 const EXI=Object.fromEntries(EXN);
 const COLORS=[['#2143F0','Cobalto'],['#E4572E','Fuego'],['#0E9F6E','Esmeralda'],['#7C3AED','Violeta'],['#0F172A','Grafito'],['#D97706','Ámbar']];
 
@@ -278,7 +279,7 @@ function copy(text,msg){const ok=()=>toast(msg||'Copiado. Pégalo en WhatsApp');
   function fb(){const ta=document.createElement('textarea');ta.value=text;document.body.append(ta);ta.select();try{document.execCommand('copy');ok()}catch(e){toast('Selecciona el texto y cópialo')}ta.remove()}}
 
 /* ===================== DATOS (Firestore) ===================== */
-let D={ready:false,v:2,plans:[],methods:[],brand:{name:'',sede:'',color:'#2143F0',welcome:''},code:'',owner:'',sus:null,created:null,members:[],pays:[],customProgs:[],retos:[],team:[]};
+let D={ready:false,v:2,plans:[],methods:[],brand:{name:'',sede:'',color:'#2143F0',welcome:''},code:'',owner:'',sus:null,created:null,members:[],pays:[],customProgs:[],retos:[],team:[],videos:[]};
 let SYNC=null, QR_K='', VIS={};
 const SK={m:{},v:{},p:{},c:{},r:{},gym:''};
 const clean=o=>JSON.parse(JSON.stringify(o));
@@ -339,6 +340,7 @@ async function boot(){
   if(isFrontRole()) onSnapshot(query(col('pagos'),where('d','>=',dkey(dayAt(400)))),qs=>{ D.pays=qs.docs.map(d=>({id:d.id,...d.data()})); D.pays.forEach(p=>SK.p[p.id]=1); ready('pagos'); },bad);
   onSnapshot(col('programas'),qs=>{ D.customProgs=qs.docs.map(d=>({id:d.id,...d.data()})); SK.c={}; D.customProgs.forEach(p=>SK.c[p.id]=JSON.stringify(p)); ready('programas'); },bad);
   onSnapshot(col('retos'),qs=>{ D.retos=qs.docs.map(d=>({id:d.id,...d.data()})); SK.r={}; D.retos.forEach(r=>SK.r[r.id]=JSON.stringify(r)); ready('retos'); },bad);
+  onSnapshot(col('videos'),qs=>{ D.videos=qs.docs.map(d=>({id:d.id,...d.data()})); scheduleRender(); },()=>{});
   onSnapshot(col('equipo'),qs=>{ D.team=qs.docs.map(d=>({id:d.id,...d.data()})); buildTrainers(); ready('equipo'); },bad);
   onSnapshot(doc(F.db,'gimnasios',gid,'privado','qr'),sn=>{ const x=sn.data(); if(x&&x.d===TODAY) QR_K=x.k; else ensureQR(); const q=document.getElementById('qr'); if(q) drawQR(q,220); if(window.kioskRedraw) window.kioskRedraw(); },bad);
 }
@@ -809,11 +811,36 @@ function vProgramas(){
       <div class="list">${P.slice(0,3).map((x,i)=>`<div class="li"><div class="who"><b style="font-family:var(--f-display);font-size:22px;width:18px;color:var(--accent)">${i+1}</b><span class="av" style="background:${hueOf(x.m.n)}">${ini(x.m.n)}</span><b>${esc(x.m.n)}</b></div><span class="num">${x.v}/${r.meta}</span></div>`).join('')}</div>
       <button class="btn sm ghost" data-share="${r.id}">Copiar invitación para el grupo de WhatsApp</button></div>`}).join('')}</div></div>
   ${D.customProgs.length?`<div class="card"><div class="card-h"><h3>Programas de ${esc(D.brand.name)}</h3></div><div class="list">${D.customProgs.map(p=>`<div class="li"><div><b>${esc(p.n)}</b><div class="muted" style="font-size:13px">${LV[p.l]} · ${p.days.length} días · ${p.days.reduce((a,d)=>a+d.x.length,0)} ejercicios</div></div><span class="chips"><span class="tag" style="background:var(--hi);color:var(--hi-ink);border-color:transparent">Del gimnasio</span><span class="num muted">${cnt[p.id]||0} miembros</span></span></div>`).join('')}</div></div>`:''}
+  ${videosCard()}
   <div class="card"><div class="card-h"><h3>Programas FORJA</h3><span class="muted" style="font-size:13px">incluidos en la app</span></div>
     <div class="tablewrap" style="border:0"><table style="min-width:560px"><thead><tr><th>Programa</th><th>Nivel</th><th>Días / semana</th><th>Semanas</th><th>Miembros siguiéndolo</th></tr></thead><tbody>${PROGS.map(p=>`<tr style="cursor:default"><td><b>${p[1]}</b></td><td>${LV[p[2]]}</td><td class="num">${p[3]}</td><td class="num">${p[4]}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:120px"><i style="width:${Math.min(100,(cnt[p[0]]||0)/12*100)}%"></i></div><span class="num">${cnt[p[0]]||0}</span></div></td></tr>`).join('')}</tbody></table></div></div>`;
-  $('#view').onclick=e=>{const t=e.target.closest('[data-newprog],[data-newreto],[data-share]'); if(!t) return;
+  bindVideos();
+  $('#view').onclick=e=>{ const dv=e.target.closest('[data-delvid]'); if(dv){ const {F,gid}=SYNC; F.fs.deleteDoc(F.fs.doc(F.db,'gimnasios',gid,'videos',dv.dataset.delvid)).then(()=>toast('Video quitado'),fail); return }
+    const t=e.target.closest('[data-newprog],[data-newreto],[data-share]'); if(!t) return;
     if('newprog' in t.dataset){ if(!can('progs')){ openUpgrade('progs'); return } progBuilder(); } else if('newreto' in t.dataset){ if(!can('retos')){ openUpgrade('retos'); return } newReto(); }
     else { const r=D.retos.find(x=>x.id===t.dataset.share); copy(`🏆 Reto ${r.n} en ${D.brand.name}\nMeta: ${r.meta} ${r.tipo==='visitas'?'visitas este mes':'días seguidos'}\nPremio: ${r.premio}\nEntra a FORJA (${appUrl()}) y compite con todo el gym 💪 #RetoForja`,'Invitación copiada') } };
+}
+/* Videos reales de los entrenadores: un enlace de YouTube por ejercicio */
+const ytId=u=>{ const s=String(u||'').trim(); const m=s.match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/); return m?m[1]:(/^[A-Za-z0-9_-]{11}$/.test(s)?s:null) };
+function videosCard(){
+  const V=D.videos.slice().sort((a,b)=>String(EXI[a.id]||a.id).localeCompare(String(EXI[b.id]||b.id)));
+  const free=EXN.filter(([k])=>!D.videos.some(v=>v.id===k));
+  const names=TRAINERS.filter(t=>t.id!=='dueno').map(t=>t.n);
+  return `<div class="card"><div class="card-h"><h3>Videos de tus entrenadores</h3><span class="muted" style="font-size:13px">${V.length} de ${EXN.length} ejercicios con video</span></div>
+   <p class="muted" style="margin:-4px 0 12px;font-size:13px">Graba al entrenador haciendo el ejercicio (30 a 60 segundos, celular en horizontal), súbelo a YouTube como <b>No listado</b> y pega el enlace aquí. Tus miembros lo ven dentro del ejercicio en su app, en lugar del video genérico.</p>
+   <form id="vf" class="vform">
+     <label class="f">Ejercicio<select class="inp" id="vEx" required>${free.map(([k,n])=>`<option value="${k}">${esc(n)}</option>`).join('')}</select></label>
+     <label class="f">Enlace de YouTube<input class="inp" id="vUrl" required placeholder="https://youtu.be/..." inputmode="url"></label>
+     <label class="f">Entrenador<input class="inp" id="vIns" list="vInsL" maxlength="40" placeholder="Ej. Natalia Gómez"><datalist id="vInsL">${names.map(n=>`<option value="${esc(n)}">`).join('')}</datalist></label>
+     <button class="btn" type="submit">Guardar video</button>
+   </form>
+   ${V.length?`<div class="list" style="margin-top:12px">${V.map(v=>`<div class="li"><div class="who"><img src="https://i.ytimg.com/vi/${encodeURIComponent(v.yt)}/default.jpg" alt="" width="64" height="48" style="border-radius:8px;object-fit:cover;flex:none;background:var(--surface-2)"><span style="min-width:0"><b>${esc(EXI[v.id]||v.id)}</b><small>${v.instructor?esc(v.instructor)+' · ':''}<a href="https://youtu.be/${encodeURIComponent(v.yt)}" target="_blank" rel="noopener">ver en YouTube</a></small></span></div><button class="btn sm ghost" data-delvid="${esc(v.id)}">Quitar</button></div>`).join('')}</div>`:'<div class="empty" style="margin-top:12px">Aún no hay videos. Empieza por los 5 ejercicios que más hacen tus miembros: sentadilla, press de banca, peso muerto, remo y hip thrust.</div>'}</div>`;
+}
+function bindVideos(){
+  const f=$('#vf'); if(!f) return;
+  f.onsubmit=async ev=>{ ev.preventDefault(); const id=$('#vEx').value, yt=ytId($('#vUrl').value);
+    if(!yt){ toast('Ese enlace no parece de YouTube. Copia el enlace con el botón Compartir del video'); return }
+    const {F,gid}=SYNC; try{ await F.fs.setDoc(F.fs.doc(F.db,'gimnasios',gid,'videos',id),{yt,url:$('#vUrl').value.trim(),instructor:$('#vIns').value.trim(),by:SYNC.uid,ts:F.fs.serverTimestamp()}); toast('Video guardado. Tus miembros ya lo ven en '+(EXI[id]||'el ejercicio')); }catch(err){ fail(err) } };
 }
 function progBuilder(){
   const P={n:'',l:1,days:[{n:'Día A',x:[]}]};
