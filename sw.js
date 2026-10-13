@@ -1,6 +1,6 @@
 // FORJA · service worker: funciona sin internet para abrir la app y ver ejercicios.
 // Sube el número de versión cada vez que publiques cambios importantes.
-const CACHE = 'forja-v6';
+const CACHE = 'forja-v7';
 const SHELL = ['./', './index.html', './app.html', './panel.html', './manifest.json',
   './js/fb.js', './js/firebase-config.js', './js/forja-config.js', './js/instalar.js', './js/vendor/html5-qrcode.min.js', './js/vendor/qrcode-generator.js',
   './icons/icon-192.png', './icons/icon-512.png'];
@@ -14,6 +14,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return; // Firebase y fuentes van directo a internet
+  // Videos y animaciones 3D: directo a internet. En iPhone/Safari los videos no se reproducen si pasan por el service worker.
+  if (url.pathname.includes('/media/') || e.request.headers.has('range')) return;
   const isPage = e.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('.js');
   if (isPage) {
     // Primero internet (para ver siempre la última versión); si no hay conexión, la copia guardada
